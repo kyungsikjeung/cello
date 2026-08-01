@@ -8,6 +8,12 @@ import {
   useMediaLibrary,
 } from "./MediaLibrary.jsx";
 import { permissions, roleLabels } from "./auth.js";
+import {
+  getCategory,
+  getEditorTabs,
+  validateCategoryConfig,
+} from "./cms-v2/registry.js";
+import { migrateSite } from "./cms-v2/migrate-site.js";
 
 const projectKeys = (projectId) => ({
   draft: `landing-cms:draft:${projectId}`,
@@ -20,6 +26,13 @@ const read = (key, fallback) => {
   } catch {
     return fallback;
   }
+};
+const readMigratedDraft = (key) => {
+  const current = read(key, cloneSite());
+  const migrated = migrateSite(current);
+  if (JSON.stringify(current) !== JSON.stringify(migrated))
+    localStorage.setItem(key, JSON.stringify(migrated));
+  return migrated;
 };
 const fieldNames = {
   name: "학원명",
@@ -165,12 +178,13 @@ export function CmsAppV2({ session, project, onLogout }) {
   const keys = useMemo(() => projectKeys(projectId), [projectId]);
   const access = permissions[session.user.role] || permissions.viewer;
   const initialDraft = useMemo(
-    () => read(keys.draft, cloneSite()),
+    () => readMigratedDraft(keys.draft),
     [keys.draft],
   );
   const [site, setSite] = useState(initialDraft),
     [published, setPublished] = useState(() => read(keys.published, null)),
     [versions, setVersions] = useState(() => read(keys.versions, []));
+  const categoryDefinition = getCategory(site.category);
   const [tab, setTab] = useState("hero"),
     [device, setDevice] = useState("desktop"),
     [dirty, setDirty] = useState(false),
@@ -234,7 +248,7 @@ export function CmsAppV2({ session, project, onLogout }) {
     setStatus("자동 저장 대기 중");
     const timer = setTimeout(() => {
       const result = validateSite(site);
-      if (!result.success) {
+      if (!result.success || validateCategoryConfig(site).length) {
         setStatus("검증 오류 · 자동 저장 보류");
         return;
       }
@@ -260,7 +274,13 @@ export function CmsAppV2({ session, project, onLogout }) {
       setStatus("검토자 권한은 저장할 수 없습니다.");
       return;
     }
+    const categoryErrors = validateCategoryConfig(site);
     const result = validateSite(site);
+    if (categoryErrors.length) {
+      setErrors(categoryErrors);
+      setStatus("업종 구성 오류");
+      return;
+    }
     if (!result.success) {
       setErrors(result.error.issues.map(friendlyIssue));
       setStatus("검증 오류");
@@ -276,7 +296,13 @@ export function CmsAppV2({ session, project, onLogout }) {
       setStatus("소유자만 사이트를 공개할 수 있습니다.");
       return;
     }
+    const categoryErrors = validateCategoryConfig(site);
     const result = validateSite(site);
+    if (categoryErrors.length) {
+      setErrors(categoryErrors);
+      setStatus("업종 구성 오류");
+      return;
+    }
     if (!result.success) {
       setErrors(result.error.issues.map(friendlyIssue));
       setStatus("검증 오류");
@@ -308,7 +334,7 @@ export function CmsAppV2({ session, project, onLogout }) {
     setConfirmReset(false);
   };
   const restoreVersion = (version) => {
-    setSite(cloneSite(version.site));
+    setSite(migrateSite(version.site));
     setDirty(true);
     setErrors([]);
     setStatus(`${version.id} 복원 · 자동 저장 대기`);
@@ -330,7 +356,7 @@ export function CmsAppV2({ session, project, onLogout }) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const next = JSON.parse(await file.text()),
+      const next = migrateSite(JSON.parse(await file.text())),
         result = validateSite(next);
       if (!result.success)
         throw new Error("사이트 데이터 형식이 맞지 않습니다.");
@@ -343,15 +369,7 @@ export function CmsAppV2({ session, project, onLogout }) {
     }
     event.target.value = "";
   };
-  const tabs = [
-    ["hero", "첫 화면"],
-    ["program", "프로그램"],
-    ["teacher", "강사"],
-    ["visit", "위치"],
-    ["theme", "디자인"],
-    ["media", "미디어"],
-    ["versions", "버전"],
-  ];
+  const tabs = getEditorTabs(site.category, site.sections);
   const logout = () => {
     if (dirty && validation.success)
       localStorage.setItem(keys.draft, JSON.stringify(site));
@@ -397,7 +415,9 @@ export function CmsAppV2({ session, project, onLogout }) {
         <button className="cms-project">
           <span>PROJECT</span>
           <b>{project.name}</b>
-          <small>{project.id}</small>
+          <small>
+            {project.id} · {categoryDefinition.label}
+          </small>
         </button>
         <nav>
           {tabs.map(([id, label], i) => (

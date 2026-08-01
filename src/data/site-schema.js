@@ -16,9 +16,21 @@ const meta = z.tuple([text, text, text]);
 
 export const siteSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
+  cmsVersion: z.literal(2),
+  category: z.enum(["lesson", "company", "restaurant", "wedding"]),
+  templateId: text,
+  sections: z
+    .array(
+      z.object({
+        id: text,
+        enabled: z.boolean(),
+        order: z.number().int().min(0),
+      }),
+    )
+    .min(1),
   name: text.max(80),
   wordmark: text.max(40),
-  template: z.enum(["editorial-02b"]),
+  template: z.string().optional(),
   theme: z.object({
     primary: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
     background: z.string(),

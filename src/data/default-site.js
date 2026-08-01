@@ -1,5 +1,17 @@
 export const defaultSite = {
   id: "ongyeol-cello",
+  cmsVersion: 2,
+  category: "lesson",
+  templateId: "editorial-02b",
+  sections: [
+    { id: "hero", enabled: true, order: 0 },
+    { id: "program", enabled: true, order: 1 },
+    { id: "teacher", enabled: true, order: 2 },
+    { id: "visit", enabled: true, order: 3 },
+    { id: "theme", enabled: true, order: 4 },
+    { id: "media", enabled: true, order: 5 },
+    { id: "versions", enabled: true, order: 6 },
+  ],
   name: "온결 첼로 스튜디오",
   wordmark: "ONGYEOL / CELLO",
   template: "editorial-02b",
