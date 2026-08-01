@@ -5,44 +5,67 @@
 ## 프로젝트 현황판
 
 > 마지막 업데이트: 2026-08-02  
-> 현재 단계: **MVP 2 · 서버 저장 및 R2 연동 준비**  
+> 현재 단계: **SaaS 플랫폼 0단계 · 아키텍처와 브랜치 책임 분리**
 > 현재 실행 모드: **Local MVP** — 고객 운영용 인증·클라우드 저장은 아직 연결되지 않았습니다.
 
-### GitHub 저장소 운영 현황
+이 프로젝트의 장기 목표는 랜딩페이지 한 개가 아니라 회원·프로젝트·CMS·배포·도메인·구독·운영 기능을 제공하는 웹사이트 빌더 SaaS입니다. 공급자별 비용·장단점·필요 인력·공통 구현 범위와 최종 권장안은 [`docs/PLATFORM_ARCHITECTURE_OPTIONS.md`](docs/PLATFORM_ARCHITECTURE_OPTIONS.md)에서 관리합니다.
+
+### GitHub 저장소와 브랜치 운영 현황
 
 저장소: [kyungsikjeung/cello](https://github.com/kyungsikjeung/cello)
 
-| 브랜치  | 역할        | 현재 목표                                            | 병합 조건                                                     | 상태    |
-| ------- | ----------- | ---------------------------------------------------- | ------------------------------------------------------------- | ------- |
-| `main`  | 안정 기준선 | 검증된 첼로 랜딩페이지와 Local CMS V1 보존           | 빌드·핵심 브라우저 검증을 통과한 변경만 반영                  | 안정    |
-| `CMSV2` | 차세대 개발 | 레슨·회사·레스토랑·웨딩을 지원하는 다중 카테고리 CMS | 카테고리 모델, 템플릿, 데이터 마이그레이션과 회귀 테스트 완료 | 개발 중 |
+#### 현재 원격 브랜치
+
+| 브랜치 URL | 역할 | 현재 목표 | 병합 조건 | 상태 |
+| --- | --- | --- | --- | --- |
+| [`main`](https://github.com/kyungsikjeung/cello/tree/main) | 안정 기준선·로드맵 허브 | 검증된 첼로 랜딩페이지와 Local CMS V1, 전체 플랫폼 계획과 브랜치 현황 보존 | 기능 브랜치와 `CMSV2`의 완료 조건 및 회귀 검증 통과 | 안정 |
+| [`CMSV2`](https://github.com/kyungsikjeung/cello/tree/CMSV2) | 차세대 통합 브랜치 | 레슨·회사·레스토랑·웨딩 CMS와 플랫폼 기능을 단계적으로 통합 | 카테고리 모델, 템플릿, 데이터 마이그레이션, 보안·브라우저 회귀 테스트 | 개발 중 |
+
+#### 계획된 기능 브랜치와 URL
+
+기능 브랜치는 `CMSV2`에서 분기해 검증 후 다시 `CMSV2`로 병합합니다. 아래 링크는 브랜치 이름과 GitHub URL을 미리 고정한 것으로, 상태가 `생성 전`인 링크는 원격 브랜치를 만든 뒤 활성화됩니다.
+
+| 브랜치 URL | 담당 범위 | 기준·병합 대상 | 핵심 완료 조건 | 상태 |
+| --- | --- | --- | --- | --- |
+| [`ks/cms-category-templates`](https://github.com/kyungsikjeung/cello/tree/ks/cms-category-templates) | 회사·레스토랑·웨딩·레슨 category/section registry와 공통 Renderer | `CMSV2` → `CMSV2` | 네 업종 생성·편집·1440/768/390px 회귀 검증 | 계획·생성 전 |
+| [`ks/platform-auth-projects`](https://github.com/kyungsikjeung/cello/tree/ks/platform-auth-projects) | Supabase Auth, 워크스페이스·프로젝트·구성원, PostgreSQL RLS | `CMSV2` → `CMSV2` | 세 역할 권한과 교차 워크스페이스 차단 테스트 | 계획·생성 전 |
+| [`ks/cloud-media`](https://github.com/kyungsikjeung/cello/tree/ks/cloud-media) | MediaStorageProvider, Supabase Storage, R2 전환 경계, 원본·파생 이미지 | `CMSV2` → `CMSV2` | 제한시간 업로드, quota, HEIC, 초점, 삭제·복구 검증 | 계획·생성 전 |
+| [`ks/publish-domains`](https://github.com/kyungsikjeung/cello/tree/ks/publish-domains) | 불변 Release, 기본 URL, Preview, 롤백, Vercel/Cloudflare 도메인 | `CMSV2` → `CMSV2` | 원자적 공개·롤백, 소유권·DNS·SSL 상태 검증 | 계획·생성 전 |
+| [`ks/billing-observability`](https://github.com/kyungsikjeung/cello/tree/ks/billing-observability) | PortOne/Toss 구독, entitlement, webhook, 감사 로그·알림·복원 | `CMSV2` → `CMSV2` | 중복·순서 역전 webhook, 결제 실패 유예, 백업 복원 검증 | 계획·생성 전 |
 
 #### 브랜치 관리 규칙
 
-- `main`은 항상 실행 가능한 기준 브랜치로 유지합니다.
-- 신규 CMS V2 기능은 `CMSV2`에서 구현하고 검증 전에는 `main`에 직접 반영하지 않습니다.
-- `CMSV2`는 기존 첼로 프로젝트가 정상 작동하는 상태를 유지해야 합니다.
+- `main`은 실행 가능한 안정 기준선, 전체 로드맵, 아키텍처 결정과 브랜치 현황판을 관리합니다.
+- 제품 기능은 `main`에 직접 구현하지 않고 `CMSV2` 또는 목적별 `ks/*` 기능 브랜치에서 개발합니다.
+- 목적별 기능 브랜치는 `CMSV2`에서 만들고 Pull Request 검토 후 `CMSV2`로 병합합니다.
+- `CMSV2`는 기능 브랜치의 통합·회귀 검증 장소이며 기존 첼로 프로젝트가 계속 정상 작동해야 합니다.
+- 여러 책임을 한 브랜치에 섞지 않고 브랜치 하나에는 하나의 완료 조건만 둡니다.
+- 기능 브랜치를 생성하거나 병합하면 위 URL 표의 상태와 완료 조건을 같은 변경에서 갱신합니다.
 - 기능 구현과 필요한 검증을 모두 통과한 항목만 README 체크박스를 `[x]`로 변경합니다.
 - 커밋은 하나의 목적을 가져야 하며 문서, 구현, 검증 결과를 함께 기록합니다.
+- 코드 또는 문서가 변경되면 `CHANGELOG/YYYY-MM-DD_HH-mm.md`에 요약·수정 파일·이유·영향·검증 결과를 기록합니다.
 - `node_modules`, `dist`, `.env`와 비밀키는 Git에 포함하지 않습니다.
 - `CMSV2`가 완료 조건을 충족하면 Pull Request 검토 후 `main`으로 병합합니다.
 
 #### 현재 스냅샷
 
-| 기준              | 커밋      | 내용                                                           |
-| ----------------- | --------- | -------------------------------------------------------------- |
-| `main` 최초 기준  | `3b727aa` | 첼로 랜딩페이지, CMS, 미디어, 로컬 권한, Supabase/R2 설계 초안 |
-| `CMSV2` 계획 기준 | `04d7da4` | 다중 업종 범위, 구조 원칙, MVP 체크리스트                      |
+| 기준 | 커밋 | 내용 |
+| --- | --- | --- |
+| `main` 문서화 직전 기준 | `1da678c` | 첼로 랜딩페이지, Local CMS, 저장·권한 UX와 기존 브랜치 현황판 |
+| `CMSV2` 현재 통합 기준 | `21e5e03` | category registry 기반과 다중 업종 CMS V2 개발 상태 |
 
 #### 개발 흐름
 
 ```mermaid
 flowchart LR
-    stable["main 안정 기준"] --> snapshot["기준 스냅샷"]
-    snapshot --> cmsv2["CMSV2 기능 개발"]
-    cmsv2 --> verify["빌드·브라우저·회귀 검증"]
-    verify --> review["Pull Request 검토"]
-    review --> stable
+    stable["main 안정 기준·로드맵"] --> integration["CMSV2 통합 브랜치"]
+    integration --> feature["ks/* 목적별 기능 브랜치"]
+    feature --> verify["단위·보안·브라우저 검증"]
+    verify --> cmsreview["PR → CMSV2"]
+    cmsreview --> integration
+    integration --> release["전체 회귀·출시 게이트"]
+    release --> mainreview["PR → main"]
+    mainreview --> stable
 ```
 
 작업을 시작할 때는 현재 브랜치와 작업 트리를 확인하고, 종료할 때는 README 현황·체크박스·검증 결과를 갱신합니다.
@@ -51,6 +74,7 @@ flowchart LR
 
 | 단계                         | 상태       | 현재 결과                                             | 완료 기준                                     |
 | ---------------------------- | ---------- | ----------------------------------------------------- | --------------------------------------------- |
+| 0. SaaS 아키텍처·브랜치 분리 | ✅ 완료    | 대안 비용·리소스·권장안과 목적별 브랜치 URL 문서화   | README 현황판과 아키텍처 의사결정 문서        |
 | 1. 로그인·권한·프로젝트 격리 | ✅ 완료    | 소유자·편집자·검토자 권한과 프로젝트별 로컬 저장 구현 | 세 역할의 접근 제한 브라우저 검증             |
 | 2. 서버 저장·R2              | 🟡 진행 중 | Supabase 스키마, RLS 정책, 환경변수 계약 작성         | 실제 로그인·DB 저장·R2 업로드 통합 테스트     |
 | 3. 공개 배포                 | ⚪ 대기    | 로컬 공개본과 버전 스냅샷만 제공                      | 미리보기 URL·운영 URL·롤백 동작               |
@@ -78,10 +102,11 @@ flowchart LR
 
 ### 현재 진행 중인 작업
 
-MVP 2의 서버 연결 기반을 준비한 상태입니다.
+Local MVP 이후의 서버 연결 기반과 SaaS 브랜치 개발 순서를 준비한 상태입니다.
 
 - `supabase/schema.sql`: 프로젝트·멤버·콘텐츠·버전·미디어 테이블과 RLS 정책
 - `docs/CLOUD_MVP.md`: 서버 권한, revision 충돌 방지, R2 객체 규칙
+- `docs/PLATFORM_ARCHITECTURE_OPTIONS.md`: 공급자별 비용·장단점·개발 리소스와 단계형 권장 구조
 - `.env.example`: Supabase 공개 설정과 서버 전용 R2 설정 구분
 
 ### 외부 입력이 필요한 항목
@@ -96,11 +121,12 @@ MVP 2의 서버 연결 기반을 준비한 상태입니다.
 
 ### 다음 작업
 
-1. Supabase 프로젝트 생성 및 환경변수 연결
-2. 실제 이메일 로그인으로 로컬 인증 교체
-3. 초안·공개본·버전을 PostgreSQL에 저장
-4. R2 업로드 URL 발급 API와 미디어 저장 연결
+1. `ks/platform-auth-projects`를 `CMSV2`에서 생성하고 README 상태를 `개발 중`으로 갱신
+2. Supabase 프로젝트 생성 및 환경변수 연결
+3. 실제 이메일 로그인으로 로컬 인증 교체
+4. 초안·공개본·버전을 PostgreSQL에 저장
 5. 세 역할 RLS와 다른 프로젝트 접근 차단 테스트
+6. 인증·프로젝트 기반이 병합된 뒤 `ks/cloud-media`와 `ks/publish-domains`를 순서대로 진행
 
 ### 최근 검증 결과
 
@@ -117,9 +143,11 @@ MVP 2의 서버 연결 기반을 준비한 상태입니다.
 ### 문서 역할
 
 - `README.md`: 현재 진행 상태, 실행법, 검증 결과, 다음 작업을 확인하는 첫 문서
+- `docs/PLATFORM_ARCHITECTURE_OPTIONS.md`: 대안 아키텍처, 비용·인력 비교, 권장 공급자 조합과 전환 기준
 - `docs/CLOUD_MVP.md`: 서버 구현 시 지켜야 할 데이터·권한·스토리지 계약
 - `supabase/schema.sql`: 실제 DB 테이블과 접근 정책
 - `.env.example`: 필요한 환경변수 이름과 공개/비공개 경계
+- `CHANGELOG/`: 변경 이유·영향과 검증 결과의 시간순 기록
 
 앞으로 기능을 변경할 때는 이 현황판의 **마지막 업데이트, 단계 상태, 최근 검증 결과, 다음 작업**도 함께 갱신합니다.
 
