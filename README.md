@@ -10,65 +10,44 @@
 
 이 프로젝트의 장기 목표는 랜딩페이지 한 개가 아니라 회원·프로젝트·CMS·배포·도메인·구독·운영 기능을 제공하는 웹사이트 빌더 SaaS입니다. 공급자별 비용·장단점·필요 인력·공통 구현 범위와 최종 권장안은 [`docs/PLATFORM_ARCHITECTURE_OPTIONS.md`](docs/PLATFORM_ARCHITECTURE_OPTIONS.md)에서 관리합니다.
 
-### GitHub 저장소와 브랜치 운영 현황
+### GitHub 브랜치 현황
 
 저장소: [kyungsikjeung/cello](https://github.com/kyungsikjeung/cello)
 
-#### 현재 원격 브랜치
-
-| 브랜치 URL | 역할 | 현재 목표 | 병합 조건 | 상태 |
-| --- | --- | --- | --- | --- |
-| [`main`](https://github.com/kyungsikjeung/cello/tree/main) | 안정 기준선·로드맵 허브 | 검증된 첼로 랜딩페이지와 Local CMS V1, 전체 플랫폼 계획과 브랜치 현황 보존 | 기능 브랜치와 `CMSV2`의 완료 조건 및 회귀 검증 통과 | 안정 |
-| [`CMSV2`](https://github.com/kyungsikjeung/cello/tree/CMSV2) | 차세대 통합 브랜치 | 레슨·회사·레스토랑·웨딩 CMS와 플랫폼 기능을 단계적으로 통합 | 카테고리 모델, 템플릿, 데이터 마이그레이션, 보안·브라우저 회귀 테스트 | 개발 중 |
-
-#### 계획된 기능 브랜치와 URL
-
-기능 브랜치는 `CMSV2`에서 분기해 검증 후 다시 `CMSV2`로 병합합니다. 아래 링크는 브랜치 이름과 GitHub URL을 미리 고정한 것으로, 상태가 `생성 전`인 링크는 원격 브랜치를 만든 뒤 활성화됩니다.
-
-| 브랜치 URL | 담당 범위 | 기준·병합 대상 | 핵심 완료 조건 | 상태 |
-| --- | --- | --- | --- | --- |
-| [`ks/cms-category-templates`](https://github.com/kyungsikjeung/cello/tree/ks/cms-category-templates) | 회사·레스토랑·웨딩·레슨 category/section registry와 공통 Renderer | `CMSV2` → `CMSV2` | 네 업종 생성·편집·1440/768/390px 회귀 검증 | 계획·생성 전 |
-| [`ks/platform-auth-projects`](https://github.com/kyungsikjeung/cello/tree/ks/platform-auth-projects) | Supabase Auth, 워크스페이스·프로젝트·구성원, PostgreSQL RLS | `CMSV2` → `CMSV2` | 세 역할 권한과 교차 워크스페이스 차단 테스트 | 계획·생성 전 |
-| [`ks/cloud-media`](https://github.com/kyungsikjeung/cello/tree/ks/cloud-media) | MediaStorageProvider, Supabase Storage, R2 전환 경계, 원본·파생 이미지 | `CMSV2` → `CMSV2` | 제한시간 업로드, quota, HEIC, 초점, 삭제·복구 검증 | 계획·생성 전 |
-| [`ks/publish-domains`](https://github.com/kyungsikjeung/cello/tree/ks/publish-domains) | 불변 Release, 기본 URL, Preview, 롤백, Vercel/Cloudflare 도메인 | `CMSV2` → `CMSV2` | 원자적 공개·롤백, 소유권·DNS·SSL 상태 검증 | 계획·생성 전 |
-| [`ks/billing-observability`](https://github.com/kyungsikjeung/cello/tree/ks/billing-observability) | PortOne/Toss 구독, entitlement, webhook, 감사 로그·알림·복원 | `CMSV2` → `CMSV2` | 중복·순서 역전 webhook, 결제 실패 유예, 백업 복원 검증 | 계획·생성 전 |
-
-#### 브랜치 관리 규칙
-
-- `main`은 실행 가능한 안정 기준선, 전체 로드맵, 아키텍처 결정과 브랜치 현황판을 관리합니다.
-- 제품 기능은 `main`에 직접 구현하지 않고 `CMSV2` 또는 목적별 `ks/*` 기능 브랜치에서 개발합니다.
-- 목적별 기능 브랜치는 `CMSV2`에서 만들고 Pull Request 검토 후 `CMSV2`로 병합합니다.
-- `CMSV2`는 기능 브랜치의 통합·회귀 검증 장소이며 기존 첼로 프로젝트가 계속 정상 작동해야 합니다.
-- 여러 책임을 한 브랜치에 섞지 않고 브랜치 하나에는 하나의 완료 조건만 둡니다.
-- 기능 브랜치를 생성하거나 병합하면 위 URL 표의 상태와 완료 조건을 같은 변경에서 갱신합니다.
-- 기능 구현과 필요한 검증을 모두 통과한 항목만 README 체크박스를 `[x]`로 변경합니다.
-- 커밋은 하나의 목적을 가져야 하며 문서, 구현, 검증 결과를 함께 기록합니다.
-- 코드 또는 문서가 변경되면 `CHANGELOG/YYYY-MM-DD_HH-mm.md`에 요약·수정 파일·이유·영향·검증 결과를 기록합니다.
-- `node_modules`, `dist`, `.env`와 비밀키는 Git에 포함하지 않습니다.
-- `CMSV2`가 완료 조건을 충족하면 Pull Request 검토 후 `main`으로 병합합니다.
-
-#### 현재 스냅샷
-
-| 기준 | 커밋 | 내용 |
-| --- | --- | --- |
-| `main` 문서화 직전 기준 | `1da678c` | 첼로 랜딩페이지, Local CMS, 저장·권한 UX와 기존 브랜치 현황판 |
-| `CMSV2` 현재 통합 기준 | `21e5e03` | category registry 기반과 다중 업종 CMS V2 개발 상태 |
-
-#### 개발 흐름
-
 ```mermaid
-flowchart LR
-    stable["main 안정 기준·로드맵"] --> integration["CMSV2 통합 브랜치"]
-    integration --> feature["ks/* 목적별 기능 브랜치"]
-    feature --> verify["단위·보안·브라우저 검증"]
-    verify --> cmsreview["PR → CMSV2"]
-    cmsreview --> integration
-    integration --> release["전체 회귀·출시 게이트"]
-    release --> mainreview["PR → main"]
-    mainreview --> stable
+gitGraph
+    commit id: "main"
+    branch CMSV2
+    checkout CMSV2
+    commit id: "통합 기반"
+    branch "ks/cms-category-templates"
+    commit id: "업종 템플릿"
+    checkout CMSV2
+    branch "ks/platform-auth-projects"
+    commit id: "인증·프로젝트"
+    checkout CMSV2
+    branch "ks/cloud-media"
+    commit id: "클라우드 미디어"
+    checkout CMSV2
+    branch "ks/publish-domains"
+    commit id: "배포·도메인"
+    checkout CMSV2
+    branch "ks/billing-observability"
+    commit id: "결제·운영"
+    checkout CMSV2
 ```
 
-작업을 시작할 때는 현재 브랜치와 작업 트리를 확인하고, 종료할 때는 README 현황·체크박스·검증 결과를 갱신합니다.
+`main`과 `CMSV2`만 현재 원격에 존재합니다. `계획·생성 전` 브랜치 URL은 원격 브랜치를 만든 뒤 열립니다.
+
+| 브랜치 URL | 역할 | 핵심 목표 | 상태 |
+| --- | --- | --- | --- |
+| [`main`](https://github.com/kyungsikjeung/cello/tree/main) | 안정 기준 | 검증본·아키텍처·전체 현황 유지 | 안정 |
+| [`CMSV2`](https://github.com/kyungsikjeung/cello/tree/CMSV2) | 통합 개발 | 다중 업종 CMS 공통 기반 통합 | 개발 중 |
+| [`ks/cms-category-templates`](https://github.com/kyungsikjeung/cello/tree/ks/cms-category-templates) | 업종 템플릿 | 레슨·회사·레스토랑·웨딩 화면 완성 | 계획·생성 전 |
+| [`ks/platform-auth-projects`](https://github.com/kyungsikjeung/cello/tree/ks/platform-auth-projects) | 플랫폼 기반 | 인증·프로젝트·RLS 격리 구현 | 계획·생성 전 |
+| [`ks/cloud-media`](https://github.com/kyungsikjeung/cello/tree/ks/cloud-media) | 미디어 | 클라우드 업로드·원본·파생본 관리 | 계획·생성 전 |
+| [`ks/publish-domains`](https://github.com/kyungsikjeung/cello/tree/ks/publish-domains) | 배포·도메인 | 미리보기·공개·롤백·DNS 연결 | 계획·생성 전 |
+| [`ks/billing-observability`](https://github.com/kyungsikjeung/cello/tree/ks/billing-observability) | 결제·운영 | 구독·권한·로그·알림·복구 구축 | 계획·생성 전 |
 
 ### 전체 진행률
 
