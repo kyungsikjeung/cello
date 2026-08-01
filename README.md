@@ -6,7 +6,7 @@
 
 > 마지막 업데이트: 2026-08-02
 >
-> 현재 단계: **Local CMS 기준선 구현 · Cloud 상용 MVP 착수 준비**
+> 현재 단계: **Local CMS 기준선 구현 · Local-first 백엔드 구성 준비**
 >
 > 운영 가능 여부: **아직 불가** — 실제 고객 인증·클라우드 저장·공개 URL·도메인·결제는 연결되지 않았습니다.
 
@@ -62,14 +62,24 @@
 
 현재 실행 가능한 범위는 한 브라우저 안의 단일 `ongyeol-cello` 프로젝트를 검증하는 Local MVP입니다. 로컬 역할 제한과 프로젝트별 저장 키는 운영 보안이나 실제 멀티테넌트 격리가 완료됐다는 뜻이 아닙니다. 다중 업종 공통 기반은 `CMSV2`에서 개발 중이며 아직 `main`의 실행 기준선에 통합되지 않았습니다.
 
-## 상용 MVP 아키텍처 방향
+## 비용 우선 Local-first 아키텍처
 
-- 현재 React + Vite 구현은 CMS·렌더러·디자인 회귀를 확인하는 기준선으로 유지합니다.
-- 첫 상용 MVP는 Supabase Auth, PostgreSQL/RLS, Supabase Storage와 Vercel 기반 멀티테넌트 공개 구조를 우선 검증합니다.
-- 미디어 전환 단계에서 `MediaStorageProvider` 경계를 정의·구현하고, 트래픽과 비용이 증가하면 원본·파생 이미지를 Cloudflare R2로 분리합니다.
-- 고객 도메인은 Vercel Domain API부터 시작하고 필요할 때 Cloudflare DNS·Edge로 확장합니다.
-- 플랫폼 구독은 PortOne V2 + TossPayments 어댑터를 기준으로 하며, 사이트 방문자의 주문 결제와 분리합니다.
-- 공급자별 비용·장단점·전환 조건은 [`docs/PLATFORM_ARCHITECTURE_OPTIONS.md`](docs/PLATFORM_ARCHITECTURE_OPTIONS.md)를 의사결정 기준으로 사용합니다.
+현재 React + Vite 구현은 CMS·렌더러·02B 디자인 회귀 기준선으로 유지합니다. 클라우드 비용은 실제 사용자가 생길 때까지 미루되, 로컬과 운영의 데이터 계약은 같게 가져갑니다.
+
+| 단계 | 구성 | 비용 계획값 | 허용 범위 |
+| --- | --- | ---: | --- |
+| 현재 | 브라우저 `localStorage` + IndexedDB | $0 | UI·콘텐츠 흐름 검증 |
+| 다음 MVP | Supabase CLI/Docker의 Auth·PostgreSQL/RLS·Storage | $0 | 실제 백엔드 로컬 통합 |
+| 비공개 베타 | Supabase Free + Cloudflare Workers Static Assets | $0 가능 | 내부·초대 사용자 검증 |
+| 첫 유료 고객 | Supabase Pro + 필요 시 Workers Paid | 약 $25~30/월부터 | 출시 게이트 통과 후 상용 운영 |
+
+- 로컬에서 migration, seed와 `dist`를 만들고 검증한 뒤 Supabase Hosted와 Cloudflare에 같은 산출물을 승격합니다.
+- Vercel은 SEO·Next.js·Preview 자동화 가치가 비용보다 커질 때 Pro 유료 대안으로 사용합니다. Hobby는 개인·비상업용이므로 상용 무료안으로 계산하지 않습니다.
+- 초기 미디어는 Supabase Storage로 구현하고 `MediaStorageProvider` 경계를 둡니다. 저장·전송량이 증가하면 Cloudflare R2로 분리합니다.
+- 고객 도메인, 결제와 유료 모니터링은 기본 URL·공개·롤백이 검증된 뒤 추가합니다.
+- 개인 PC의 로컬 Supabase를 인터넷이나 터널로 공개해 운영 서버로 사용하지 않습니다.
+
+실행 절차와 비용 전환 조건은 [`docs/LOCAL_FIRST_BACKEND.md`](docs/LOCAL_FIRST_BACKEND.md), 전체 공급자 비교는 [`docs/PLATFORM_ARCHITECTURE_OPTIONS.md`](docs/PLATFORM_ARCHITECTURE_OPTIONS.md)를 기준으로 합니다.
 
 ## GitHub 브랜치 현황
 
@@ -108,7 +118,7 @@ gitGraph
 2. 아래 실행법으로 랜딩페이지와 관리자 CMS를 직접 엽니다.
 3. `owner`, `editor`, `viewer(검토자)`의 Local 권한 차이를 확인합니다.
 4. 위 브랜치 표에서 담당 영역과 현재 상태를 확인합니다.
-5. 클라우드 작업은 아키텍처 결정 문서와 [`docs/CLOUD_MVP.md`](docs/CLOUD_MVP.md)의 데이터·권한 계약을 먼저 확인합니다.
+5. 백엔드 작업은 [`docs/LOCAL_FIRST_BACKEND.md`](docs/LOCAL_FIRST_BACKEND.md)의 로컬→배포 절차와 [`docs/CLOUD_MVP.md`](docs/CLOUD_MVP.md)의 데이터·권한 계약을 먼저 확인합니다.
 
 ### 소스 지도
 
@@ -120,25 +130,29 @@ gitGraph
 | `src/cms/CmsAppV2.jsx` | CMS 편집·검증·초안·공개·버전 UX의 현재 기준선입니다. |
 | `src/cms/auth.js` | Local 데모 인증과 권한. 운영 인증으로 사용하지 않고 Supabase Auth 어댑터로 교체합니다. |
 | `src/cms/media-db.js` | IndexedDB 미디어 저장과 제한. 클라우드 전환 시 동일한 정책을 서버에서도 검증합니다. |
-| `supabase/schema.sql` | 프로젝트·구성원·문서·버전·미디어와 PostgreSQL RLS 초안입니다. 워크스페이스 테이블은 아직 없습니다. |
-| `docs/CLOUD_MVP.md` | 서버 권한, revision 저장과 향후 R2 미디어 경계 계약입니다. |
+| `supabase/schema.sql` | 읽기용 PostgreSQL/RLS 초안입니다. 워크스페이스·불변 Release·안전한 공개 RPC·Storage 정책이 아직 없습니다. |
+| `docs/LOCAL_FIRST_BACKEND.md` | 채택한 로컬 백엔드, 무료 베타, 상용 승격과 비용 전환 기준입니다. |
+| `docs/CLOUD_MVP.md` | Local-to-Cloud 데이터, 권한, 공개와 공급자 중립 미디어 계약입니다. |
 
 ### 현재 최우선 구현
 
 - [ ] `main`의 최신 README·아키텍처 문서·CHANGELOG를 `CMSV2`에 반영
 - [ ] 동기화된 `CMSV2`에서 `ks/platform-auth-projects`를 생성하고 상태를 `개발 중`으로 갱신
-- [ ] 실제 회원·워크스페이스·프로젝트 생성과 Supabase Auth 연결
-- [ ] `owner`, `editor`, `viewer(검토자)` 권한을 PostgreSQL RLS에서 재검증
-- [ ] 초안·공개본·버전을 revision 기반 PostgreSQL 저장으로 전환
+- [ ] Supabase CLI를 프로젝트 devDependency로 설치하고 로컬 `config.toml`·migration·seed 구조 생성
+- [ ] 워크스페이스·프로젝트·불변 Release·안전한 공개 RPC를 첫 migration에 구현
+- [ ] 실제 회원·워크스페이스·프로젝트 생성과 로컬 Supabase Auth 연결
+- [ ] `owner`, `editor`, `reviewer` 권한을 PostgreSQL RLS에서 재검증
+- [ ] 초안·공개·롤백을 revision과 불변 Release 기반 PostgreSQL 저장으로 전환
 - [ ] 다른 워크스페이스와 프로젝트의 행 접근을 차단하는 통합 테스트 추가
 - [ ] 위 기반이 끝난 뒤 Supabase Storage 미디어와 기본 공개 URL 구현
 
 ### 현재 차단 요소
 
-- 현재 저장소 환경에는 Supabase 프로젝트 URL과 anon key가 설정되지 않았습니다.
-- 기본 공개 URL을 만들 Vercel 배포 대상과 운영 환경이 저장소에 정의되지 않았습니다.
-- 운영 도메인, 개인정보처리방침과 고객 데이터 보유 기간이 문서에서 확정되지 않았습니다.
-- R2는 1차 상용 MVP의 차단 요소가 아닙니다. 미디어 분리 단계에서 Cloudflare 계정과 서버 전용 키를 준비합니다.
+- Docker CLI는 설치되어 있지만 Docker Engine이 실행 중이지 않고, 프로젝트 로컬 Supabase CLI와 Wrangler가 아직 설치되지 않았습니다.
+- `supabase/schema.sql`은 워크스페이스, 불변 Release, 소유자 전용 공개 RPC, Storage 정책과 프로젝트 총용량 제한이 빠진 초안입니다.
+- Hosted Preview에는 Supabase·Cloudflare 계정이 필요하지만 로컬 백엔드 구현의 즉시 차단 요소는 아닙니다.
+- 상용 출시 전에는 운영 도메인, 개인정보처리방침, 고객 데이터 보유 기간과 백업 복구 기준을 확정해야 합니다.
+- R2는 1차 백엔드 MVP의 차단 요소가 아닙니다. 사용량 임계치 이후 미디어 분리 단계에서 준비합니다.
 
 비밀값은 README나 Git에 기록하지 않습니다.
 
@@ -161,7 +175,8 @@ gitGraph
 | Local viewer 권한 | ✅ 통과 | 읽기 전용 |
 | PNG 업로드·선택·삭제 | ✅ 통과 | IndexedDB와 실시간 미리보기 |
 | 실제 HEIC 파일 변환 | 🟡 미검증 | 변환 코드만 포함 |
-| Supabase·Vercel 통합 | ⚪ 미실행 | 실제 계정 연결 후 검증 필요 |
+| Supabase Local 통합 | ⚪ 미실행 | Docker Engine·CLI·migration 구성 후 검증 필요 |
+| Cloudflare Preview 배포 | ⚪ 미실행 | 로컬 백엔드 수용 기준과 계정 연결 후 검증 필요 |
 
 위 브라우저 검증은 Local MVP 기준 기록입니다. 문서만 변경한 경우에는 빌드와 링크를 다시 확인하고, UI·통합 완료로 확대 해석하지 않습니다.
 
@@ -169,9 +184,10 @@ gitGraph
 
 - `README.md`: 제품 배경·목표·현재 범위·협업 시작점과 검증 현황
 - `AGENTS.md`: 모든 구현에서 지켜야 할 제품·보안·검증 원칙
-- `docs/PLATFORM_ARCHITECTURE_OPTIONS.md`: 공급자별 비용·인력 비교와 현재 상용 MVP 권장안
-- `docs/CLOUD_MVP.md`: 서버 권한·revision 저장·향후 R2 스토리지 계약
-- `supabase/schema.sql`: 실제 DB 테이블과 접근 정책 초안
+- `docs/LOCAL_FIRST_BACKEND.md`: 채택한 백엔드 스택·로컬 실행·배포·비용 전환 결정
+- `docs/PLATFORM_ARCHITECTURE_OPTIONS.md`: 공급자별 비용·인력 비교와 대안 분석
+- `docs/CLOUD_MVP.md`: 서버 권한·revision·불변 Release·공급자 중립 스토리지 계약
+- `supabase/schema.sql`: migration 재설계 전 읽기용 DB·RLS 초안
 - `.env.example`: 환경변수 이름과 브라우저 공개값·서버 비밀값 경계
 - `CHANGELOG/`: 변경 이유·영향·검증 결과의 시간순 기록
 

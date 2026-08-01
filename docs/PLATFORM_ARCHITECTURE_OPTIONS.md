@@ -73,8 +73,11 @@ flowchart LR
 
 ## 4. 대안 한눈에 보기
 
+로컬 개발 프로필은 운영 공급자의 대안이 아니다. 아래 H안은 로컬에서 동일한 Supabase 계약을 검증한 뒤 Free Preview와 유료 운영으로 단계적으로 승격하는 **개발·운영 결합 경로**다. 개인 PC의 Docker 스택을 공개 서버로 사용한다는 뜻이 아니다.
+
 | 대안 | 상용 베타 예상 | 성장 단계 예상 | 구현 난이도 | 운영 부담 | 적합한 시점 |
 | --- | ---: | ---: | --- | --- | --- |
+| H. Local-first Supabase + Cloudflare | $0 비공개 / $25~30 유료 | $30~200 | 낮음~중간 | 낮음 | **현재 채택** |
 | A. Supabase + Vercel | $45~70 | $90~250 | 낮음 | 낮음 | 가장 빠른 상용 MVP |
 | B. Supabase + Vercel + R2 | $45~65 | $95~220 | 중간 | 중간 | 이미지 트래픽 증가 |
 | C. Neon + Vercel + R2 | $35~65 | $100~400 | 중간 | 중간 | Supabase 대체 필요 |
@@ -322,27 +325,40 @@ AWS 전문 인력 또는 기업 고객의 AWS 기반 보안·감사 요건이 �
 
 ## 12. 현재 프로젝트 권장 결정
 
-### 상용 MVP
+### 채택안 — H. Local-first Supabase + Cloudflare
 
-1. Vercel 단일 멀티테넌트 공개 렌더러를 사용한다.
-2. Supabase Auth와 PostgreSQL/RLS를 사용한다.
-3. 초기 미디어는 Supabase Storage로 구현한다.
-4. `MediaStorageProvider`를 정의해 R2 이전 경계를 확보한다.
-5. 고객 도메인은 Vercel Domain API부터 지원한다.
-6. 구독은 PortOne V2 + TossPayments 어댑터로 구현한다.
-7. 감사 기록은 공급자 로그와 분리해 DB에 append-only로 저장한다.
+1. 현재 React/Vite CMS·Renderer를 유지한다.
+2. Supabase CLI/Docker에서 Auth, PostgreSQL/RLS, Storage와 Edge Functions를 먼저 구현한다.
+3. SQL migration, seed, 생성된 TypeScript 타입과 교차 프로젝트 RLS 테스트를 Git 기준선으로 만든다.
+4. 로컬 수용 기준을 통과하면 Supabase Free와 Cloudflare Workers Static Assets에 비공개 Preview를 배포한다.
+5. 첫 유료 고객을 받기 전에 Supabase Pro, 백업·복원 훈련과 비용 알림을 출시 게이트로 적용한다.
+6. 초기 미디어는 Supabase Storage로 구현하고 `MediaStorageProvider`를 통해 R2 이전 경계를 확보한다.
+7. 공개 화면은 무거운 SSR보다 정적 Renderer와 불변 Release 조회를 우선한다.
+8. 구독은 PortOne V2 + TossPayments 어댑터로 구현하고 공급자 로그와 별도의 append-only 감사 기록을 남긴다.
+
+Cloudflare 배포는 로컬 `dist`를 동일하게 올리는 Workers Static Assets를 기본으로 한다. 현재 앱은 멀티페이지이므로 SPA fallback을 사용하지 않는다. Supabase Free의 중지 가능성과 무백업 상태 때문에 무료 Preview는 유료 고객 운영이나 SLA 제공에 사용하지 않는다.
+
+Vercel은 폐기하지 않는다. 별도 Next.js Public Renderer, SEO, Preview 자동화 또는 Domain API의 가치가 월 비용보다 커질 때 A안으로 전환한다. Vercel Hobby는 개인·비상업용이므로 상용 무료 대안으로 계산하지 않는다.
+
+구체적인 저장소 구조, 로컬·원격 명령과 보안 게이트는 [`LOCAL_FIRST_BACKEND.md`](LOCAL_FIRST_BACKEND.md)를 따른다.
 
 ### 확장 순서
 
 ```mermaid
 flowchart LR
-    a["Supabase + Vercel"] --> b["R2 미디어 분리"]
-    b --> c["Cloudflare 도메인·Edge 선택"]
-    c --> d["기업 요구 시 OCI/AWS 검토"]
+    local["Supabase Local · 외부 비용 $0"] --> preview["Supabase Free + Cloudflare 비공개 Preview"]
+    preview --> paid["첫 유료 고객 · Supabase Pro"]
+    paid --> r2["사용량 임계치 · R2 미디어 분리"]
+    paid --> vercel["SEO·SSR 가치 확인 · Vercel Pro 선택"]
+    r2 --> enterprise["기업 요구 · OCI/AWS 검토"]
+    vercel --> enterprise
 ```
 
-OCI나 AWS 전체 이전은 사용자 수 자체가 아니라 다음 조건으로 결정한다.
+공급자 전환은 사용자 수 자체가 아니라 다음 조건으로 결정한다.
 
+- 첫 유료 고객 또는 Free 프로젝트 중지 위험을 허용할 수 없는 시점
+- 이미지 저장·전송 비용 변동성이 목표를 지속적으로 초과하는 경우
+- SEO, SSR, Preview 또는 고객 도메인 자동화가 Vercel Pro 비용보다 큰 가치를 만드는 경우
 - 계약형 SLA 또는 전용 네트워크 요구
 - 고객별 물리 격리나 데이터 지역 요구
 - 현재 공급자 한도 때문에 기능 제공이 불가능한 경우
@@ -430,10 +446,15 @@ AuditProvider
 
 ## 16. 공식 참고 자료
 
+- [Supabase Local Development](https://supabase.com/docs/guides/local-development/cli-workflows)
 - [Supabase Pricing](https://supabase.com/pricing)
 - [Supabase Billing and Usage](https://supabase.com/docs/guides/platform/billing-on-supabase)
+- [Supabase Free Project Pausing](https://supabase.com/docs/guides/platform/free-project-pausing)
 - [Vercel Pricing](https://vercel.com/pricing)
 - [Vercel for Platforms](https://vercel.com/changelog/introducing-vercel-for-platforms)
+- [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
+- [Cloudflare Static Assets Billing and Limits](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/)
+- [Cloudflare Pages Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)
 - [Cloudflare Workers Pricing](https://developers.cloudflare.com/workers/platform/pricing/)
 - [Cloudflare R2 Pricing](https://developers.cloudflare.com/r2/pricing/)
 - [Cloudflare for SaaS Plans](https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/plans/)
@@ -443,5 +464,7 @@ AuditProvider
 - [AWS CloudFront Pricing](https://aws.amazon.com/cloudfront/pricing/)
 - [Amazon Cognito Pricing](https://aws.amazon.com/cognito/pricing/)
 - [Amazon Aurora Pricing](https://aws.amazon.com/rds/aurora/pricing/)
+- [PocketBase Documentation](https://pocketbase.io/docs/)
+- [Appwrite Self-hosting](https://appwrite.io/docs/advanced/self-hosting)
 - [PortOne Pricing](https://www.portone.io/pricing)
 - [TossPayments Billing Overview](https://docs.tosspayments.com/guides/billing/overview)

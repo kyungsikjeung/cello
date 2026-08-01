@@ -1,3 +1,10 @@
+-- DRAFT SNAPSHOT ONLY — do not apply this file directly to a Hosted project.
+-- The deployable source of truth will be supabase/migrations/ after the Local Backend MVP.
+-- This draft still lacks workspaces, immutable site_releases/current_release_id,
+-- owner-only publish/rollback RPCs, Storage bucket/object RLS, project creation flows,
+-- media variants, and transactional project file-count/total-size enforcement.
+-- In particular, the current site_documents UPDATE policy is not a safe publish boundary.
+
 create extension if not exists pgcrypto;
 
 create type public.project_role as enum ('owner', 'editor', 'viewer');
