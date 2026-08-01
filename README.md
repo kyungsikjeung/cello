@@ -171,7 +171,7 @@ gitGraph
 | 검증 | 결과 | 의미 |
 | --- | --- | --- |
 | `npm run build` | ✅ 통과 | React/Vite 프로덕션 빌드 |
-| `npm test` (vitest 25건) | ✅ 통과 | 사이트 스키마·변경 비교·버전 ID·인증 순수 로직 단위 테스트 |
+| `npm test` (vitest 31건) | ✅ 통과 | 사이트 스키마·변경 비교·버전 ID·인증 순수 로직 단위 테스트 |
 | 첫 migration 스모크 11건 | ✅ 통과 | PostgreSQL 17(Docker)+auth 스텁 — RPC 권한·revision 충돌·Release 불변·RLS 격리 |
 | Local 소유자 권한 | ✅ 통과 | 저장·공개 가능 |
 | Local 편집자 권한 | ✅ 통과 | 저장 가능·공개 불가 |
