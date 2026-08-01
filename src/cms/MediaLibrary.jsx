@@ -33,6 +33,7 @@ export function useMediaLibrary(projectId) {
 export function MediaLibrary({
   projectId,
   items,
+  urls = {},
   refresh,
   onSelect,
   selected,
@@ -119,7 +120,7 @@ export function MediaLibrary({
         <div className="media-grid">
           {items.map((item) => {
             const ref = mediaRef(item.id);
-            const url = URL.createObjectURL(item.display || item.original);
+            const url = urls[ref] || "";
             const used = usedRefs.has(ref);
             return (
               <article
@@ -131,11 +132,7 @@ export function MediaLibrary({
                   disabled={!canEdit && Boolean(onSelect)}
                   onClick={() => onSelect?.(ref)}
                 >
-                  <img
-                    src={url}
-                    alt=""
-                    onLoad={() => URL.revokeObjectURL(url)}
-                  />
+                  <img src={url} alt="" />
                   <span>
                     {selected === ref
                       ? "선택됨"

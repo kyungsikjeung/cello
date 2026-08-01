@@ -8,6 +8,13 @@ import {
   useMediaLibrary,
 } from "./MediaLibrary.jsx";
 import { permissions, roleLabels } from "./auth.js";
+import {
+  compareSites,
+  flatten,
+  friendlyIssue,
+  nextVersionId,
+  resolveMedia,
+} from "./site-utils.js";
 
 const projectKeys = (projectId) => ({
   draft: `landing-cms:draft:${projectId}`,
@@ -21,76 +28,7 @@ const read = (key, fallback) => {
     return fallback;
   }
 };
-const fieldNames = {
-  name: "학원명",
-  wordmark: "워드마크",
-  "hero.kicker": "첫 화면 라벨",
-  "hero.title.0": "첫 화면 제목 1",
-  "hero.title.1": "첫 화면 제목 2",
-  "hero.title.2": "첫 화면 제목 3",
-  "hero.description.0": "첫 화면 설명 1",
-  "hero.description.1": "첫 화면 설명 2",
-  "hero.cta": "CTA",
-  "hero.autoplayMs": "캐러셀 속도",
-  "teacher.name": "강사 이름",
-  "teacher.role": "강사 역할",
-  "visit.address": "주소",
-  "visit.transit": "교통 안내",
-  "contact.phone": "전화번호",
-  "theme.primary": "포인트 색상",
-  "seo.title": "SEO 제목",
-};
-const friendlyIssue = (issue) =>
-  `${fieldNames[issue.path.join(".")] || issue.path.join(".")}: ${issue.code === "too_small" ? "필수 입력값입니다." : issue.code === "too_big" ? "허용 길이를 초과했습니다." : "입력값을 확인해 주세요."}`;
-
-function flatten(value, path = "", result = {}) {
-  if (Array.isArray(value)) {
-    value.forEach((item, i) =>
-      flatten(item, path ? `${path}.${i}` : `${i}`, result),
-    );
-    return result;
-  }
-  if (value && typeof value === "object") {
-    Object.entries(value).forEach(([key, item]) =>
-      flatten(item, path ? `${path}.${key}` : key, result),
-    );
-    return result;
-  }
-  result[path] = value;
-  return result;
-}
-function compareSites(published, draft) {
-  const before = flatten(published || {}),
-    after = flatten(draft),
-    metadata = new Set(["publishedAt", "createdAt", "id", "summary"]);
-  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
-    .filter(
-      (path) =>
-        !metadata.has(path) &&
-        JSON.stringify(before[path]) !== JSON.stringify(after[path]),
-    )
-    .map((path) => ({
-      path,
-      label: fieldNames[path] || path,
-      before: before[path],
-      after: after[path],
-    }));
-}
 const display = (value) => (value === undefined ? "—" : String(value));
-const resolveMedia = (value, urls) => {
-  if (Array.isArray(value))
-    return value.map((item) => resolveMedia(item, urls));
-  if (value && typeof value === "object")
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [
-        key,
-        resolveMedia(item, urls),
-      ]),
-    );
-  return typeof value === "string" && value.startsWith("media:")
-    ? urls[value] || value
-    : value;
-};
 
 function Field({ label, value, onChange, multiline = false, type = "text" }) {
   const Control = multiline ? "textarea" : "input";
@@ -238,7 +176,7 @@ export function CmsAppV2({ session, project, onLogout }) {
         setStatus("검증 오류 · 자동 저장 보류");
         return;
       }
-      localStorage.setItem(keys.draft, JSON.stringify(site));
+      localStorage.setItem(keys.draft, JSON.stringify(result.data));
       setDirty(false);
       setStatus(`자동 저장 완료 · ${new Date().toLocaleTimeString("ko-KR")}`);
     }, 900);
@@ -266,7 +204,8 @@ export function CmsAppV2({ session, project, onLogout }) {
       setStatus("검증 오류");
       return;
     }
-    localStorage.setItem(keys.draft, JSON.stringify(site));
+    setSite(result.data);
+    localStorage.setItem(keys.draft, JSON.stringify(result.data));
     setErrors([]);
     setDirty(false);
     setStatus(`수동 저장 완료 · ${new Date().toLocaleTimeString("ko-KR")}`);
@@ -282,14 +221,16 @@ export function CmsAppV2({ session, project, onLogout }) {
       setStatus("검증 오류");
       return;
     }
+    const clean = result.data;
     const snapshot = {
-      id: `v${String(versions.length + 1).padStart(3, "0")}`,
+      id: nextVersionId(versions),
       createdAt: new Date().toISOString(),
       summary: `${changes.length}개 항목 변경`,
-      site: cloneSite(site),
+      site: cloneSite(clean),
     };
     const nextVersions = [snapshot, ...versions].slice(0, 20);
-    localStorage.setItem(keys.draft, JSON.stringify(site));
+    setSite(clean);
+    localStorage.setItem(keys.draft, JSON.stringify(clean));
     localStorage.setItem(keys.published, JSON.stringify(snapshot));
     localStorage.setItem(keys.versions, JSON.stringify(nextVersions));
     setPublished(snapshot);
@@ -334,7 +275,7 @@ export function CmsAppV2({ session, project, onLogout }) {
         result = validateSite(next);
       if (!result.success)
         throw new Error("사이트 데이터 형식이 맞지 않습니다.");
-      setSite(next);
+      setSite(result.data);
       setDirty(true);
       setErrors([]);
       setStatus("JSON 불러옴 · 자동 저장 대기");
@@ -484,6 +425,11 @@ export function CmsAppV2({ session, project, onLogout }) {
                   updateFocus={updateFocus}
                 />
                 <Field
+                  label="라벨"
+                  value={slide.label}
+                  onChange={(v) => update(["hero", "slides", i, "label"], v)}
+                />
+                <Field
                   label="캡션"
                   value={slide.caption}
                   onChange={(v) => update(["hero", "slides", i, "caption"], v)}
@@ -609,6 +555,7 @@ export function CmsAppV2({ session, project, onLogout }) {
           <MediaLibrary
             projectId={projectId}
             items={media.items}
+            urls={media.resolved}
             refresh={media.refresh}
             usedRefs={usedMediaRefs}
             canEdit={access.edit}
