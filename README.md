@@ -139,7 +139,8 @@ gitGraph
 - [ ] `main`의 최신 README·아키텍처 문서·CHANGELOG를 `CMSV2`에 반영
 - [ ] 동기화된 `CMSV2`에서 `ks/platform-auth-projects`를 생성하고 상태를 `개발 중`으로 갱신
 - [ ] Supabase CLI를 프로젝트 devDependency로 설치하고 로컬 `config.toml`·migration·seed 구조 생성
-- [ ] 워크스페이스·프로젝트·불변 Release·안전한 공개 RPC를 첫 migration에 구현
+- [x] 불변 Release·소유자 전용 공개/롤백 RPC·초안 revision 충돌 처리를 첫 migration에 구현 — PostgreSQL 17(Docker) 스모크 11건 통과, Supabase CLI 스택 검증은 남음
+- [ ] 워크스페이스 모델과 Storage 정책을 후속 migration에 추가
 - [ ] 실제 회원·워크스페이스·프로젝트 생성과 로컬 Supabase Auth 연결
 - [ ] `owner`, `editor`, `reviewer` 권한을 PostgreSQL RLS에서 재검증
 - [ ] 초안·공개·롤백을 revision과 불변 Release 기반 PostgreSQL 저장으로 전환
@@ -149,7 +150,7 @@ gitGraph
 ### 현재 차단 요소
 
 - Docker CLI는 설치되어 있지만 Docker Engine이 실행 중이지 않고, 프로젝트 로컬 Supabase CLI와 Wrangler가 아직 설치되지 않았습니다.
-- `supabase/schema.sql`은 워크스페이스, 불변 Release, 소유자 전용 공개 RPC, Storage 정책과 프로젝트 총용량 제한이 빠진 초안입니다.
+- 첫 migration(`supabase/migrations/`)이 불변 Release·공개/롤백 RPC·revision 충돌 처리를 포함하지만, 워크스페이스·Storage 버킷/객체 정책·프로젝트 총용량 제한은 후속 migration 범위입니다.
 - Hosted Preview에는 Supabase·Cloudflare 계정이 필요하지만 로컬 백엔드 구현의 즉시 차단 요소는 아닙니다.
 - 상용 출시 전에는 운영 도메인, 개인정보처리방침, 고객 데이터 보유 기간과 백업 복구 기준을 확정해야 합니다.
 - R2는 1차 백엔드 MVP의 차단 요소가 아닙니다. 사용량 임계치 이후 미디어 분리 단계에서 준비합니다.
@@ -170,12 +171,14 @@ gitGraph
 | 검증 | 결과 | 의미 |
 | --- | --- | --- |
 | `npm run build` | ✅ 통과 | React/Vite 프로덕션 빌드 |
+| `npm test` (vitest 25건) | ✅ 통과 | 사이트 스키마·변경 비교·버전 ID·인증 순수 로직 단위 테스트 |
+| 첫 migration 스모크 11건 | ✅ 통과 | PostgreSQL 17(Docker)+auth 스텁 — RPC 권한·revision 충돌·Release 불변·RLS 격리 |
 | Local 소유자 권한 | ✅ 통과 | 저장·공개 가능 |
 | Local 편집자 권한 | ✅ 통과 | 저장 가능·공개 불가 |
 | Local viewer 권한 | ✅ 통과 | 읽기 전용 |
 | PNG 업로드·선택·삭제 | ✅ 통과 | IndexedDB와 실시간 미리보기 |
 | 실제 HEIC 파일 변환 | 🟡 미검증 | 변환 코드만 포함 |
-| Supabase Local 통합 | ⚪ 미실행 | Docker Engine·CLI·migration 구성 후 검증 필요 |
+| Supabase Local 통합 | ⚪ 미실행 | Supabase CLI 스택(config.toml·Auth 연동)에서 같은 migration 재검증 필요 |
 | Cloudflare Preview 배포 | ⚪ 미실행 | 로컬 백엔드 수용 기준과 계정 연결 후 검증 필요 |
 
 위 브라우저 검증은 Local MVP 기준 기록입니다. 문서만 변경한 경우에는 빌드와 링크를 다시 확인하고, UI·통합 완료로 확대 해석하지 않습니다.
@@ -187,7 +190,7 @@ gitGraph
 - `docs/LOCAL_FIRST_BACKEND.md`: 채택한 백엔드 스택·로컬 실행·배포·비용 전환 결정
 - `docs/PLATFORM_ARCHITECTURE_OPTIONS.md`: 공급자별 비용·인력 비교와 대안 분석
 - `docs/CLOUD_MVP.md`: 서버 권한·revision·불변 Release·공급자 중립 스토리지 계약
-- `supabase/schema.sql`: migration 재설계 전 읽기용 DB·RLS 초안
+- `supabase/migrations/`: 배포 가능한 DB·RLS·RPC migration (검증 기록은 `CHANGELOG/`)
 - `.env.example`: 환경변수 이름과 브라우저 공개값·서버 비밀값 경계
 - `CHANGELOG/`: 변경 이유·영향·검증 결과의 시간순 기록
 
@@ -219,6 +222,12 @@ npm run dev
 
 ```powershell
 npm run build
+```
+
+순수 로직 단위 테스트(vitest)는 다음 명령으로 실행합니다.
+
+```powershell
+npm test
 ```
 
 ## Local MVP 사용 흐름
