@@ -14,6 +14,9 @@ import {
   friendlyIssue,
   nextVersionId,
   resolveMedia,
+  sanitizeStoredDraft,
+  sanitizeStoredPublished,
+  sanitizeStoredVersions,
 } from "./site-utils.js";
 
 const projectKeys = (projectId) => ({
@@ -102,18 +105,26 @@ export function CmsAppV2({ session, project, onLogout }) {
   const projectId = project.id;
   const keys = useMemo(() => projectKeys(projectId), [projectId]);
   const access = permissions[session.user.role] || permissions.viewer;
-  const initialDraft = useMemo(
-    () => read(keys.draft, cloneSite()),
+  const restored = useMemo(
+    () => sanitizeStoredDraft(read(keys.draft, null), cloneSite()),
     [keys.draft],
   );
-  const [site, setSite] = useState(initialDraft),
-    [published, setPublished] = useState(() => read(keys.published, null)),
-    [versions, setVersions] = useState(() => read(keys.versions, []));
+  const [site, setSite] = useState(restored.site),
+    [published, setPublished] = useState(() =>
+      sanitizeStoredPublished(read(keys.published, null)),
+    ),
+    [versions, setVersions] = useState(() =>
+      sanitizeStoredVersions(read(keys.versions, [])),
+    );
   const [tab, setTab] = useState("hero"),
     [device, setDevice] = useState("desktop"),
     [dirty, setDirty] = useState(false),
     [status, setStatus] = useState(
-      localStorage.getItem(keys.draft) ? "저장된 초안 불러옴" : "새 초안",
+      restored.recovered
+        ? "저장된 초안이 손상되어 기본값으로 대체했습니다. 저장 전 내용을 확인하세요."
+        : localStorage.getItem(keys.draft)
+          ? "저장된 초안 불러옴"
+          : "새 초안",
     );
   const [errors, setErrors] = useState([]),
     [compareOpen, setCompareOpen] = useState(false),
