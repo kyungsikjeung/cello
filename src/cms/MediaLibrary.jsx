@@ -56,7 +56,7 @@ export function MediaLibrary({
     try {
       for (const file of files) await addMedia(file, projectId);
       await refresh();
-      setMessage(`${files.length}개 이미지 업로드 완료`);
+      setMessage(`${files.length}개 미디어 업로드 완료`);
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -95,20 +95,19 @@ export function MediaLibrary({
           disabled={busy || !canEdit}
           onClick={() => input.current.click()}
         >
-          {busy ? "처리 중…" : "이미지 업로드"}
+          {busy ? "처리 중…" : "이미지·MP4 업로드"}
         </button>
         <input
           ref={input}
           hidden
           multiple
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,video/mp4,.mp4"
           onChange={upload}
         />
       </div>
       <p className="media-policy">
-        JPG · PNG · WebP · HEIC / 파일당 15MB · 원본 보관 · HEIC는 화면 표시용
-        JPEG를 함께 생성합니다.
+        이미지 15MB · Hero MP4 20초/100MB · 원본 보관 · 동영상은 Poster와 모바일 대체 이미지가 필요합니다.
       </p>
       {message && <p className="media-message">{message}</p>}
       {items.length === 0 ? (
@@ -132,19 +131,19 @@ export function MediaLibrary({
                   disabled={!canEdit && Boolean(onSelect)}
                   onClick={() => onSelect?.(ref)}
                 >
-                  <img src={url} alt="" />
+                  {item.kind === "video" ? <video src={url} muted playsInline /> : <img src={url} alt="" />}
                   <span>
                     {selected === ref
                       ? "선택됨"
                       : onSelect
-                        ? "이 이미지 사용"
+                        ? "이 미디어 사용"
                         : "미디어"}
                   </span>
                 </button>
                 <div>
                   <b title={item.name}>{item.name}</b>
                   <small>
-                    {item.width}×{item.height} · {bytesLabel(item.size)}
+                    {item.width}×{item.height} · {bytesLabel(item.size)}{item.duration ? ` · ${item.duration.toFixed(1)}초` : ""}
                     {item.convertedFromHeic ? " · HEIC 변환" : ""}
                     {used ? " · 사용 중" : ""}
                   </small>

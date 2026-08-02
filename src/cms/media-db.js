@@ -1,6 +1,7 @@
 export const MEDIA_LIMITS = {
   projectBytes: 250 * 1024 * 1024,
   fileBytes: 15 * 1024 * 1024,
+  videoFileBytes: 100 * 1024 * 1024,
   maxItems: 100,
 };
 
@@ -60,12 +61,26 @@ const dimensions = (blob) =>
     image.src = url;
   });
 
+const videoMetadata = (blob) => new Promise((resolve) => {
+  const video = document.createElement("video");
+  const url = URL.createObjectURL(blob);
+  video.preload = "metadata";
+  video.onloadedmetadata = () => {
+    resolve({ width: video.videoWidth, height: video.videoHeight, duration: video.duration });
+    URL.revokeObjectURL(url);
+  };
+  video.onerror = () => { resolve({ width: 0, height: 0, duration: 0 }); URL.revokeObjectURL(url); };
+  video.src = url;
+});
+
 export async function addMedia(file, projectId) {
   const current = await listMedia(projectId);
   if (current.length >= MEDIA_LIMITS.maxItems)
     throw new Error("프로젝트당 최대 100개까지 업로드할 수 있습니다.");
-  if (file.size > MEDIA_LIMITS.fileBytes)
-    throw new Error("파일 하나는 15MB 이하여야 합니다.");
+  const isVideo = file.type === "video/mp4" || /\.mp4$/i.test(file.name);
+  const maxFileBytes = isVideo ? MEDIA_LIMITS.videoFileBytes : MEDIA_LIMITS.fileBytes;
+  if (file.size > maxFileBytes)
+    throw new Error(isVideo ? "Hero MP4는 100MB 이하여야 합니다." : "이미지 하나는 15MB 이하여야 합니다.");
   const used = current.reduce(
     (sum, item) => sum + item.original.size + (item.display?.size || 0),
     0,
@@ -78,7 +93,8 @@ export async function addMedia(file, projectId) {
       throw new Error("이 기기의 브라우저 저장공간이 부족합니다.");
   }
 
-  const heic = /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+  if (!isVideo && !file.type.startsWith("image/") && !/\.hei[cf]$/i.test(file.name)) throw new Error("JPG·PNG·WebP·HEIC 이미지 또는 MP4 영상만 업로드할 수 있습니다.");
+  const heic = !isVideo && (/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name));
   let display = file;
   if (heic) {
     const { default: heic2any } = await import("heic2any");
@@ -93,8 +109,9 @@ export async function addMedia(file, projectId) {
     throw new Error(
       "HEIC 변환본을 포함하면 프로젝트 저장 한도 250MB를 초과합니다.",
     );
-  const { width, height } = await dimensions(display);
-  if (!width || !height) throw new Error("이미지를 읽을 수 없습니다.");
+  const { width, height, duration = 0 } = isVideo ? await videoMetadata(file) : await dimensions(display);
+  if (!width || !height) throw new Error(isVideo ? "MP4 영상을 읽을 수 없습니다." : "이미지를 읽을 수 없습니다.");
+  if (isVideo && duration > 20) throw new Error("Hero MP4는 20초 이하여야 합니다.");
   const item = {
     id: crypto.randomUUID(),
     projectId,
@@ -104,6 +121,8 @@ export async function addMedia(file, projectId) {
     createdAt: new Date().toISOString(),
     width,
     height,
+    duration,
+    kind: isVideo ? "video" : "image",
     original: file,
     display: heic ? display : null,
     convertedFromHeic: heic,

@@ -1,5 +1,6 @@
 export const defaultSite = {
   id: "ongyeol-cello",
+  category: "lesson",
   name: "온결 첼로 스튜디오",
   wordmark: "ONGYEOL / CELLO",
   template: "editorial-02b",

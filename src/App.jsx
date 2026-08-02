@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { defaultSite } from "./data/default-site.js";
+import { publicTemplateLinks, resolveTemplateRequest } from "./data/template-registry.js";
+import { RestaurantTemplate } from "./RestaurantTemplate.jsx";
 
 const asset = (name) =>
   /^(blob:|data:|https?:|\/)/.test(name) ? name : `/assets/${name}`;
@@ -328,7 +330,7 @@ function InfoCards({ type }) {
   );
 }
 
-export function LandingTemplate({ site = defaultSite, preview = false }) {
+function LessonTemplate({ site = defaultSite, preview = false }) {
   const [summary, setSummary] = useState(
     "입력한 상담 내용이 여기에 표시됩니다.",
   );
@@ -492,6 +494,58 @@ export function LandingTemplate({ site = defaultSite, preview = false }) {
   );
 }
 
+export function LandingTemplate({ site = defaultSite, preview = false, category }) {
+  const rendererCategory = category || site?.category;
+  const isBusinessTemplate =
+    rendererCategory === "restaurant" ||
+    rendererCategory === "franchise" ||
+    site?.template?.startsWith("restaurant-") ||
+    site?.template === "franchise-brand-01" ||
+    Boolean(site?.gallery?.images && site?.inquiry && (site?.menu?.items || site?.offerings?.items));
+
+  if (isBusinessTemplate) {
+    return <RestaurantTemplate site={site} preview={preview} />;
+  }
+
+  const isLessonTemplate =
+    rendererCategory === "lesson" ||
+    site?.template === "editorial-02b" ||
+    Boolean(site?.programs && site?.teacher && site?.contact);
+
+  if (isLessonTemplate) return <LessonTemplate site={site} preview={preview} />;
+  return <TemplateDataError preview={preview} />;
+}
+
+function TemplateDataError({ preview }) {
+  return (
+    <main className={`template-not-found ${preview ? "cms-preview-page" : ""}`}>
+      <p>TEMPLATE / DATA MISMATCH</p>
+      <h1>템플릿 데이터를<br />불러오지 못했습니다.</h1>
+      <span>카테고리와 섹션 데이터가 일치하지 않습니다. CMS에서 기본값을 복원하거나 페이지를 새로고침해 주세요.</span>
+    </main>
+  );
+}
+
+function TemplateNotFound({ requested }) {
+  return (
+    <main className="template-not-found">
+      <p>TEMPLATE / NOT FOUND</p>
+      <h1>요청한 템플릿을<br />찾을 수 없습니다.</h1>
+      <span>`{requested}` 주소를 확인하거나 아래 템플릿을 선택해 주세요.</span>
+      <nav aria-label="사용 가능한 템플릿">
+        {publicTemplateLinks.map((template) => (
+          <a key={template.id} href={template.href}>
+            {{ lesson: "레슨", restaurant: "레스토랑", franchise: "프랜차이즈" }[template.category] || template.category}
+            <small>{template.id}</small>
+          </a>
+        ))}
+      </nav>
+    </main>
+  );
+}
+
 export default function App() {
-  return <LandingTemplate site={defaultSite} />;
+  const resolved = resolveTemplateRequest(window.location.search);
+  if (!resolved.site) return <TemplateNotFound requested={resolved.requested} />;
+  return <LandingTemplate site={resolved.site} category={resolved.entry.category} />;
 }

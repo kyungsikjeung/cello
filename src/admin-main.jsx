@@ -6,6 +6,7 @@ import "../styles.css";
 import "./cms/admin.css";
 import "./cms/preview-frame.css";
 import "./cms/v2.css";
+import "./restaurant.css";
 
 createRoot(document.getElementById("admin-root")).render(
   <React.StrictMode>
