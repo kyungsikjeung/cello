@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:reset": "supabase db reset",
+    "supabase:lint": "supabase db lint"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -19,6 +24,7 @@
   },
   "devDependencies": {
     "jsdom": "^29.1.1",
+    "supabase": "2.111.0",
     "vitest": "^4.1.10"
   }
 }

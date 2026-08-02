@@ -1,0 +1,2 @@
+-- Local MVP seed data will be added with the real Auth/project integration.
+-- Keep this file intentionally empty so `supabase db reset` remains reproducible.
