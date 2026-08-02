@@ -147,7 +147,7 @@ function Hero({ hero }) {
         <div className="hero-copy-bottom">
           <p className="hero-reveal">
             {hero.description.map((line, i) => (
-              <span key={line}>
+              <span key={i}>
                 {line}
                 {i < hero.description.length - 1 && <br />}
               </span>
@@ -260,7 +260,7 @@ function Program({ programs }) {
           <div className="program-dots scroll-reveal">
             {programs.map((p, i) => (
               <button
-                key={p.label}
+                key={i}
                 aria-selected={i === index}
                 onClick={() => setIndex(i)}
               >
@@ -289,8 +289,8 @@ function Program({ programs }) {
         </div>
       </div>
       <div className="program-meta is-visible">
-        {item.meta.map((m) => (
-          <article className="scroll-reveal-item" key={m[0]}>
+        {item.meta.map((m, i) => (
+          <article className="scroll-reveal-item" key={i}>
             <small>{m[0]}</small>
             <h3>{m[1]}</h3>
             <p>{m[2]}</p>
@@ -376,7 +376,7 @@ export function LandingTemplate({ site = defaultSite, preview = false }) {
             </h2>
             <p className="scroll-reveal">
               {site.teacher.description.map((x, i) => (
-                <span key={x}>
+                <span key={i}>
                   {x}
                   {i === 0 && <br />}
                 </span>

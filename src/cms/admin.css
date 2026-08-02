@@ -394,10 +394,67 @@
     display: block;
   }
   .cms-topbar {
-    height: 64px;
+    min-height: 64px;
+    height: auto;
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    justify-content: stretch;
+    gap: 10px;
+  }
+  .cms-topbar > div {
+    width: 100%;
+    min-width: 0;
+  }
+  .cms-topbar > div:first-child {
+    justify-content: space-between;
+  }
+  .cms-topbar > div:first-child span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cms-top-actions {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px !important;
+  }
+  .cms-top-actions > span:not(.cms-user) {
+    grid-column: 1 / -1;
+  }
+  .cms-top-actions button {
+    min-width: 0;
+    padding: 10px 4px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .cms-user {
+    display: none;
   }
   .cms-sidebar {
+    display: block;
+    padding: 0;
+    overflow-x: auto;
+  }
+  .cms-sidebar .cms-project,
+  .cms-sidebar .cms-file-actions {
     display: none;
+  }
+  .cms-sidebar nav {
+    min-width: max-content;
+    flex-direction: row;
+  }
+  .cms-sidebar nav button {
+    flex: 0 0 auto;
+    padding: 13px 16px;
+    border-right: 1px solid #303030;
+    border-bottom: 0;
+    white-space: nowrap;
+  }
+  .cms-sidebar nav button span {
+    width: auto;
+    margin-right: 8px;
   }
   .cms-editor {
     height: auto;
