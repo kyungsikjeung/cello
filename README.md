@@ -183,8 +183,8 @@ PR #2와 PR #3은 `main`에 병합됐습니다. 기존 `CMSV2`에는 최신 CI·
 
 | 검증 | 결과 | 의미 |
 | --- | --- | --- |
-| `npm test` | ✅ 47/47 통과 | 기존 CMS 31개 + 자체 API/Auth/DB 경계 16개 |
-| `npm run build` | ✅ 통과 | 병합 후 `main` React/Vite 프로덕션 빌드 |
+| `npm test` | ✅ 56/56 통과 | 기존 CMS 31개 + 자체 API/Auth/DB 경계 25개 |
+| `npm run build` | ✅ 통과 | 현재 백엔드 브랜치 React/Vite 프로덕션 빌드 |
 | Local 소유자 권한 | ✅ 통과 | 저장·공개 가능 |
 | Local 편집자 권한 | ✅ 통과 | 저장 가능·공개 불가 |
 | Local viewer 권한 | ✅ 통과 | 읽기 전용 |
@@ -192,7 +192,7 @@ PR #2와 PR #3은 `main`에 병합됐습니다. 기존 `CMSV2`에는 최신 CI·
 | 실제 HEIC 파일 변환 | 🟡 미검증 | 변환 코드만 포함 |
 | Supabase DB 기준선 | ✅ 47/47 통과 | migration reset·lint·RLS·revision·공개·롤백 |
 | 자체 백엔드 runtime 의존성 감사 | ✅ 취약점 0 | `npm audit --omit=dev` 기준 |
-| 새 PostgreSQL 백엔드 통합 | ✅ 4/4 통과 | unsafe 역할 거부·migration 재실행·실제 Auth cookie·RLS·soft delete·분리 runtime |
+| 새 PostgreSQL 백엔드 통합 | ✅ 4/4 통과 | 리팩토링 후 PostgreSQL 17에서 migration·실제 Auth cookie·RLS·soft delete·분리 runtime 재검증 |
 | 실제 Auth·CMS DB 연결 | 🟡 서버 구현 | 브라우저 로그인과 콘텐츠 API 연결 필요 |
 | Cloudflare Preview 배포 | ⚪ 미실행 | 로컬 백엔드 수용 기준과 계정 연결 후 검증 필요 |
 
@@ -212,7 +212,8 @@ PR #2와 PR #3은 `main`에 병합됐습니다. 기존 `CMSV2`에는 최신 CI·
 - `supabase/migrations/`: 기존 47개 검증을 보존한 전환 전 기준선
 - `supabase/tests/database/`: migration의 권한·revision·공개·롤백 회귀 테스트
 - `.env.example`: 프런트엔드에 공개 가능한 `VITE_*` 설정 템플릿
-- `server/.env.example`: API·DB·Auth·R2 서버 전용 설정 템플릿
+- `server/.env.runtime.example`: API·업무 DB·Auth·R2 runtime 설정 템플릿
+- `server/.env.admin.example`: migration·DB role provisioning 관리자 설정 템플릿
 - `CHANGELOG/`: 변경 이유·영향·검증 결과의 시간순 기록
 
 ## 실행
@@ -250,8 +251,9 @@ npm run build
 백엔드의 상세 파일 구조와 운영 경계는 [`server/README.md`](server/README.md)를 기준으로 합니다. 로컬 PostgreSQL을 준비한 뒤 다음 순서로 실행합니다.
 
 ```powershell
-Copy-Item server/.env.example server/.env.local
-# server/.env.local의 DB URL과 32자 이상의 BETTER_AUTH_SECRET을 개발 값으로 수정
+Copy-Item server/.env.runtime.example server/.env.runtime.local
+Copy-Item server/.env.admin.example server/.env.admin.local
+# 두 파일의 DB URL과 runtime 파일의 32자 이상 BETTER_AUTH_SECRET을 개발 값으로 수정
 npm run db:setup
 npm run api:dev
 ```
@@ -343,7 +345,7 @@ sequenceDiagram
 - `editor@ongyeol.local`: 초안 편집·저장 가능, 공개 불가
 - `viewer@ongyeol.local`: 읽기 전용
 
-세션은 브라우저 탭의 `sessionStorage`에만 유지됩니다. 현재 화면은 권한 UX를 검증하기 위한 Local MVP이며 운영 인증이 아닙니다. 신규 서버 migration과 보안 계약은 `db/migrations/`, `server/README.md`, `docs/SELF_HOSTED_BACKEND.md`, `server/.env.example`에 정리되어 있습니다. `supabase/`는 전환 전 기준선만 보존합니다.
+세션은 브라우저 탭의 `sessionStorage`에만 유지됩니다. 현재 화면은 권한 UX를 검증하기 위한 Local MVP이며 운영 인증이 아닙니다. 신규 서버 migration과 보안 계약은 `db/migrations/`, `server/README.md`, `docs/SELF_HOSTED_BACKEND.md`, `server/.env.runtime.example`, `server/.env.admin.example`에 정리되어 있습니다. `supabase/`는 전환 전 기준선만 보존합니다.
 
 ### CMS 저장 키
 
