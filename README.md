@@ -6,7 +6,7 @@
 
 > 마지막 업데이트: 2026-08-02
 >
-> 현재 단계: **Local CMS 기준선 구현 · Local-first 백엔드 구성 준비**
+> 현재 단계: **Local CMS 안정화 · Supabase DB/RLS 기준선 검증 완료 · 실제 앱 연결 준비**
 >
 > 운영 가능 여부: **아직 불가** — 실제 고객 인증·클라우드 저장·공개 URL·도메인·결제는 연결되지 않았습니다.
 
@@ -53,14 +53,14 @@
 | --- | --- | --- | --- |
 | 레퍼런스 렌더러 | 첼로 `editorial-02b` 반응형 화면·모션·무한 캐러셀 | 네 업종의 재사용 가능한 템플릿·섹션 | 🟡 Local 구현 |
 | CMS 편집 | 문구·프로그램·디자인·미디어 편집과 반응형 미리보기 | 카테고리별 섹션 추가·삭제·정렬 | 🟡 Local 구현 |
-| 인증·프로젝트 | 테스트 사용자 3명과 단일 프로젝트의 역할 UX | 실제 회원·워크스페이스·프로젝트·RLS 격리 | 🟡 Local 전용 |
-| 콘텐츠·버전 | `localStorage` 초안·공개본·최대 20개 버전·JSON 백업 | revision 저장·불변 Release·충돌 처리 | 🟡 Local 전용 |
+| 인증·프로젝트 | Local 테스트 사용자 역할 UX와 `projects`·`project_members` RLS migration | 실제 Auth·워크스페이스·프로젝트 생성 | 🟡 DB 기반 완료·앱 미연결 |
+| 콘텐츠·버전 | Local 버전 UX와 revision 저장·불변 Release·공개·롤백 RPC | CMS를 PostgreSQL 저장 경로에 연결 | 🟡 DB 계약 완료·앱 미연결 |
 | 미디어 | IndexedDB 원본 보관·HEIC 표시본·PC/모바일 초점·용량 제한 | 클라우드 원본·파생본·CDN·복구 | 🟡 Local 전용 |
 | 공개·도메인 | 브라우저 안에서 공개 스냅샷 생성 | 기본 URL·Preview·롤백·고객 도메인·DNS·SSL | ⚪ 미구현 |
 | 결제·운영 | 요구사항과 대안 아키텍처 문서 | 구독·Entitlement·감사 로그·알림·백업 복원 | ⚪ 미구현 |
 | 상담 연동 | 문의 폼과 카카오톡 채널 이동 자리 | 문의 저장·상태 관리·비즈니스 상담 연동 | ⚪ 미구현 |
 
-현재 실행 가능한 범위는 한 브라우저 안의 단일 `ongyeol-cello` 프로젝트를 검증하는 Local MVP입니다. 로컬 역할 제한과 프로젝트별 저장 키는 운영 보안이나 실제 멀티테넌트 격리가 완료됐다는 뜻이 아닙니다. 다중 업종 공통 기반은 `CMSV2`에서 개발 중이며 아직 `main`의 실행 기준선에 통합되지 않았습니다.
+현재 실행 가능한 화면은 한 브라우저 안의 단일 `ongyeol-cello` 프로젝트를 검증하는 Local MVP입니다. 서버 쪽 프로젝트 격리·revision·불변 Release·공개·롤백 계약은 migration과 47개 DB 테스트로 검증했지만, CMS는 아직 `localStorage`와 IndexedDB를 사용하므로 운영 멀티테넌트 서비스가 완성된 것은 아닙니다. 기존 `CMSV2`는 오래된 `main`에서 갈라진 보존 브랜치이며 직접 병합하지 않습니다. 다중 업종 변경은 최신 `main`에서 새 브랜치를 만든 뒤 필요한 커밋만 이식합니다.
 
 ## 비용 우선 Local-first 아키텍처
 
@@ -68,8 +68,8 @@
 
 | 단계 | 구성 | 비용 계획값 | 허용 범위 |
 | --- | --- | ---: | --- |
-| 현재 | 브라우저 `localStorage` + IndexedDB | $0 | UI·콘텐츠 흐름 검증 |
-| 다음 MVP | Supabase CLI/Docker의 Auth·PostgreSQL/RLS·Storage | $0 | 실제 백엔드 로컬 통합 |
+| 현재 | Local CMS + Supabase CLI/Docker의 PostgreSQL·RLS migration | $0 | UI와 서버 데이터·권한 계약 검증 |
+| 다음 MVP | Supabase Auth·PostgreSQL RPC·Storage의 앱 연결 | $0 | 실제 회원과 프로젝트 단위 통합 |
 | 비공개 베타 | Supabase Free + Cloudflare Workers Static Assets | $0 가능 | 내부·초대 사용자 검증 |
 | 첫 유료 고객 | Supabase Pro + 필요 시 Workers Paid | 약 $25~30/월부터 | 출시 게이트 통과 후 상용 운영 |
 
@@ -87,25 +87,26 @@
 
 ```mermaid
 gitGraph
-    commit id: "공통 기준"
+    commit id: "02B Local 기준"
     branch CMSV2
     checkout CMSV2
-    commit id: "다중 업종 기반"
-    commit id: "CMSV2 현재"
+    commit id: "Legacy 다중 업종 기반"
     checkout main
-    commit id: "프로젝트 현황판"
     commit id: "SaaS 아키텍처"
-    commit id: "main 현재"
+    commit id: "PR3 DB·RLS 기준선"
+    commit id: "PR2 CMS 안정화"
 ```
 
-다이어그램은 현재 원격에 존재하는 `main`과 `CMSV2`만 표시합니다. `CMSV2`에는 `main`의 최신 README·아키텍처 문서·CHANGELOG가 아직 반영되지 않았습니다. `계획·생성 전` 브랜치 URL은 원격 브랜치를 만든 뒤 열립니다.
+PR #2와 PR #3은 `main`에 병합됐습니다. 기존 `CMSV2`에는 최신 CI·Supabase migration·Vitest 기준선이 없으므로 직접 병합하면 해당 파일이 삭제될 수 있습니다. 카테고리 확장은 최신 `main`에서 다시 분기합니다. `계획·생성 전` 브랜치 URL은 원격 브랜치를 만든 뒤 열립니다.
 
 | 브랜치 URL | 역할 | 핵심 목표 | 상태 |
 | --- | --- | --- | --- |
-| [`main`](https://github.com/kyungsikjeung/cello/tree/main) | 안정 기준 | 검증본·아키텍처·전체 현황 유지 | 안정 |
-| [`CMSV2`](https://github.com/kyungsikjeung/cello/tree/CMSV2) | 통합 개발 | 다중 업종 CMS 공통 기반 통합 | 개발 중·문서 동기화 필요 |
-| [`ks/cms-category-templates`](https://github.com/kyungsikjeung/cello/tree/ks/cms-category-templates) | 업종 템플릿 | 레슨·회사·레스토랑·웨딩 화면 완성 | 계획·생성 전 |
-| [`ks/platform-auth-projects`](https://github.com/kyungsikjeung/cello/tree/ks/platform-auth-projects) | 플랫폼 기반 | 인증·프로젝트·RLS 격리 구현 | 계획·생성 전 |
+| [`main`](https://github.com/kyungsikjeung/cello/tree/main) | 안정 기준 | CMS 안정화와 DB/RLS 검증본 유지 | PR #2·#3 병합·CI 통과 |
+| [`ks/cms-stability-tests`](https://github.com/kyungsikjeung/cello/tree/ks/cms-stability-tests) | CMS 안정화 | 복원 방어·미디어 회귀·Vitest·반응형 CI | 완료·PR #2 병합 |
+| [`ks/platform-auth-projects`](https://github.com/kyungsikjeung/cello/tree/ks/platform-auth-projects) | 플랫폼 DB | 프로젝트 RLS·revision·불변 Release·공개/롤백 RPC | 완료·PR #3 병합 |
+| [`CMSV2`](https://github.com/kyungsikjeung/cello/tree/CMSV2) | Legacy 보존 | 기존 다중 업종 registry 참고 | 직접 병합 금지 |
+| [`ks/platform-workspace-auth`](https://github.com/kyungsikjeung/cello/tree/ks/platform-workspace-auth) | 실제 인증 | Auth·워크스페이스·프로젝트 생성과 격리 | 계획·생성 전 |
+| [`ks/cms-category-templates`](https://github.com/kyungsikjeung/cello/tree/ks/cms-category-templates) | 업종 템플릿 | 최신 `main`에서 Legacy 카테고리 변경을 선별 이식 | 계획·재분기 필요 |
 | [`ks/cloud-media`](https://github.com/kyungsikjeung/cello/tree/ks/cloud-media) | 미디어 | 클라우드 업로드·원본·파생본 관리 | 계획·생성 전 |
 | [`ks/publish-domains`](https://github.com/kyungsikjeung/cello/tree/ks/publish-domains) | 배포·도메인 | 미리보기·공개·롤백·DNS 연결 | 계획·생성 전 |
 | [`ks/billing-observability`](https://github.com/kyungsikjeung/cello/tree/ks/billing-observability) | 결제·운영 | 구독·권한·로그·알림·복구 구축 | 계획·생성 전 |
@@ -130,26 +131,30 @@ gitGraph
 | `src/cms/CmsAppV2.jsx` | CMS 편집·검증·초안·공개·버전 UX의 현재 기준선입니다. |
 | `src/cms/auth.js` | Local 데모 인증과 권한. 운영 인증으로 사용하지 않고 Supabase Auth 어댑터로 교체합니다. |
 | `src/cms/media-db.js` | IndexedDB 미디어 저장과 제한. 클라우드 전환 시 동일한 정책을 서버에서도 검증합니다. |
-| `supabase/schema.sql` | 읽기용 PostgreSQL/RLS 초안입니다. 워크스페이스·불변 Release·안전한 공개 RPC·Storage 정책이 아직 없습니다. |
+| `supabase/migrations/20260802120000_init.sql` | 프로젝트·멤버십·revision·불변 Release·공개/롤백 RPC와 RLS의 현재 DB 기준선입니다. |
+| `supabase/tests/database/platform_rls.test.sql` | owner/editor/reviewer와 교차 프로젝트 격리, 공개·롤백을 검증하는 47개 pgTAP 테스트입니다. |
 | `docs/LOCAL_FIRST_BACKEND.md` | 채택한 로컬 백엔드, 무료 베타, 상용 승격과 비용 전환 기준입니다. |
 | `docs/CLOUD_MVP.md` | Local-to-Cloud 데이터, 권한, 공개와 공급자 중립 미디어 계약입니다. |
 
 ### 현재 최우선 구현
 
-- [ ] `main`의 최신 README·아키텍처 문서·CHANGELOG를 `CMSV2`에 반영
-- [ ] 동기화된 `CMSV2`에서 `ks/platform-auth-projects`를 생성하고 상태를 `개발 중`으로 갱신
-- [ ] Supabase CLI를 프로젝트 devDependency로 설치하고 로컬 `config.toml`·migration·seed 구조 생성
-- [ ] 워크스페이스·프로젝트·불변 Release·안전한 공개 RPC를 첫 migration에 구현
-- [ ] 실제 회원·워크스페이스·프로젝트 생성과 로컬 Supabase Auth 연결
-- [ ] `owner`, `editor`, `reviewer` 권한을 PostgreSQL RLS에서 재검증
-- [ ] 초안·공개·롤백을 revision과 불변 Release 기반 PostgreSQL 저장으로 전환
-- [ ] 다른 워크스페이스와 프로젝트의 행 접근을 차단하는 통합 테스트 추가
-- [ ] 위 기반이 끝난 뒤 Supabase Storage 미디어와 기본 공개 URL 구현
+- [x] CMS 안정화 변경과 Supabase DB/RLS 기준선을 목적별 PR로 `main`에 병합
+- [x] Supabase CLI·`config.toml`·migration·seed와 47개 DB 테스트 구성
+- [x] `owner`, `editor`, `reviewer`의 교차 프로젝트 RLS와 공개·롤백 경계 검증
+- [x] 병합 후 `main`의 31개 단위 테스트와 프로덕션 빌드 검증
+- [ ] 최신 `main`에서 `ks/platform-workspace-auth`를 만들고 실제 Supabase Auth 연결
+- [ ] 워크스페이스·초기 소유자·프로젝트를 원자적으로 생성하는 migration/RPC 구현
+- [ ] CMS 저장을 `save_draft`·`publish_site`·`rollback_site` RPC에 연결하고 충돌 UX 구현
+- [ ] Supabase Storage 미디어 격리·원본/파생본·프로젝트 제한 구현
+- [ ] 최신 `main`에서 카테고리 브랜치를 재생성하고 Legacy `CMSV2` 변경만 선별 이식
+- [ ] 위 기반이 끝난 뒤 기본 공개 URL과 Cloudflare Preview 구현
 
 ### 현재 차단 요소
 
-- Docker CLI는 설치되어 있지만 Docker Engine이 실행 중이지 않고, 프로젝트 로컬 Supabase CLI와 Wrangler가 아직 설치되지 않았습니다.
-- `supabase/schema.sql`은 워크스페이스, 불변 Release, 소유자 전용 공개 RPC, Storage 정책과 프로젝트 총용량 제한이 빠진 초안입니다.
+- 실제 Supabase Auth와 워크스페이스·초기 프로젝트 생성 경로가 아직 없습니다.
+- CMS 화면은 검증된 DB RPC 대신 `localStorage`를 사용하고 있습니다.
+- Storage bucket·`storage.objects` RLS·프로젝트 총용량 제한은 아직 구현되지 않았습니다.
+- Legacy `CMSV2`는 최신 `main`과 직접 병합하지 않고 카테고리 변경만 새 브랜치로 이식해야 합니다.
 - Hosted Preview에는 Supabase·Cloudflare 계정이 필요하지만 로컬 백엔드 구현의 즉시 차단 요소는 아닙니다.
 - 상용 출시 전에는 운영 도메인, 개인정보처리방침, 고객 데이터 보유 기간과 백업 복구 기준을 확정해야 합니다.
 - R2는 1차 백엔드 MVP의 차단 요소가 아닙니다. 사용량 임계치 이후 미디어 분리 단계에서 준비합니다.
@@ -169,13 +174,15 @@ gitGraph
 
 | 검증 | 결과 | 의미 |
 | --- | --- | --- |
-| `npm run build` | ✅ 통과 | React/Vite 프로덕션 빌드 |
+| `npm test` | ✅ 31/31 통과 | CMS 스키마·복원·권한·버전 회귀 테스트 |
+| `npm run build` | ✅ 통과 | 병합 후 `main` React/Vite 프로덕션 빌드 |
 | Local 소유자 권한 | ✅ 통과 | 저장·공개 가능 |
 | Local 편집자 권한 | ✅ 통과 | 저장 가능·공개 불가 |
 | Local viewer 권한 | ✅ 통과 | 읽기 전용 |
 | PNG 업로드·선택·삭제 | ✅ 통과 | IndexedDB와 실시간 미리보기 |
 | 실제 HEIC 파일 변환 | 🟡 미검증 | 변환 코드만 포함 |
-| Supabase Local 통합 | ⚪ 미실행 | Docker Engine·CLI·migration 구성 후 검증 필요 |
+| Supabase DB 기준선 | ✅ 47/47 통과 | migration reset·lint·RLS·revision·공개·롤백 |
+| 실제 Auth·CMS DB 연결 | ⚪ 미구현 | 실제 로그인 토큰과 브라우저 E2E 필요 |
 | Cloudflare Preview 배포 | ⚪ 미실행 | 로컬 백엔드 수용 기준과 계정 연결 후 검증 필요 |
 
 위 브라우저 검증은 Local MVP 기준 기록입니다. 문서만 변경한 경우에는 빌드와 링크를 다시 확인하고, UI·통합 완료로 확대 해석하지 않습니다.
@@ -187,7 +194,8 @@ gitGraph
 - `docs/LOCAL_FIRST_BACKEND.md`: 채택한 백엔드 스택·로컬 실행·배포·비용 전환 결정
 - `docs/PLATFORM_ARCHITECTURE_OPTIONS.md`: 공급자별 비용·인력 비교와 대안 분석
 - `docs/CLOUD_MVP.md`: 서버 권한·revision·불변 Release·공급자 중립 스토리지 계약
-- `supabase/schema.sql`: migration 재설계 전 읽기용 DB·RLS 초안
+- `supabase/migrations/`: Git으로 관리하는 실행 가능한 DB·RLS 변경 이력
+- `supabase/tests/database/`: migration의 권한·revision·공개·롤백 회귀 테스트
 - `.env.example`: 환경변수 이름과 브라우저 공개값·서버 비밀값 경계
 - `CHANGELOG/`: 변경 이유·영향·검증 결과의 시간순 기록
 
@@ -299,7 +307,7 @@ sequenceDiagram
 - `editor@ongyeol.local`: 초안 편집·저장 가능, 공개 불가
 - `viewer@ongyeol.local`: 읽기 전용
 
-세션은 브라우저 탭의 `sessionStorage`에만 유지됩니다. 현재 구현은 권한 UX를 검증하기 위한 로컬 MVP이며 운영 인증이 아닙니다. 서버 전환 스키마와 보안 계약은 `supabase/schema.sql`, `docs/CLOUD_MVP.md`, `.env.example`에 정리되어 있습니다.
+세션은 브라우저 탭의 `sessionStorage`에만 유지됩니다. 현재 구현은 권한 UX를 검증하기 위한 로컬 MVP이며 운영 인증이 아닙니다. 서버 전환 migration과 보안 계약은 `supabase/migrations/`, `docs/CLOUD_MVP.md`, `.env.example`에 정리되어 있습니다.
 
 ### CMS 저장 키
 

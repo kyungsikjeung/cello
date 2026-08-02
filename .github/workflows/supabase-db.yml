@@ -5,11 +5,15 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/supabase-db.yml"
+      - "package.json"
+      - "package-lock.json"
       - "supabase/**"
   push:
     branches: [main]
     paths:
       - ".github/workflows/supabase-db.yml"
+      - "package.json"
+      - "package-lock.json"
       - "supabase/**"
   workflow_dispatch:
 
