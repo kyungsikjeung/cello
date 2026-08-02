@@ -1,8 +1,10 @@
 # Local-to-Cloud CMS MVP 계약
 
-현재 실행 모드는 브라우저 `localStorage`와 IndexedDB를 사용하는 `browser-local`이다. 로그인과 권한 UI는 흐름 검증용이며 운영 보안으로 사용하면 안 된다. 다음 구현은 Supabase CLI/Docker의 `local-backend`에서 시작하고, 같은 migration과 타입을 Hosted 환경에 승격한다.
+> 상태: 데이터·권한 요구사항 참고용. Supabase별 실행 방식은 [`SELF_HOSTED_BACKEND.md`](SELF_HOSTED_BACKEND.md)의 Fastify·Better Auth·PostgreSQL 결정으로 대체되었습니다.
 
-로컬 실행·배포·비용 결정은 [`LOCAL_FIRST_BACKEND.md`](LOCAL_FIRST_BACKEND.md)를 따른다.
+현재 실행 모드는 브라우저 `localStorage`와 IndexedDB를 사용하는 `browser-local`이다. 로그인과 권한 UI는 흐름 검증용이며 운영 보안으로 사용하면 안 된다. 다음 구현은 자체 Fastify API와 PostgreSQL을 로컬에서 검증하고 같은 migration과 서버 버전을 운영 환경에 승격한다.
+
+현재 로컬 실행·배포 결정은 [`SELF_HOSTED_BACKEND.md`](SELF_HOSTED_BACKEND.md)를 따른다. 아래 Supabase 명칭은 이전 대안의 역사적 기록이며 신규 구현 기준이 아니다.
 
 ## 실행 환경 계약
 

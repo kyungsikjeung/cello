@@ -3,11 +3,19 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "vite",
+    "api:dev": "node --watch --env-file-if-exists=.env.local server/index.js",
+    "api:start": "node --env-file-if-exists=.env server/index.js",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:backend": "vitest run --config vite.backend.config.js",
+    "db:migrate": "node --env-file-if-exists=.env.local server/db/migrate.js",
+    "db:provision": "node --env-file-if-exists=.env.local server/db/provision.js",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
@@ -15,8 +23,12 @@
     "supabase:lint": "supabase db lint"
   },
   "dependencies": {
+    "@fastify/cors": "^11.3.0",
     "@vitejs/plugin-react": "latest",
+    "better-auth": "^1.6.25",
+    "fastify": "^5.11.0",
     "heic2any": "^0.0.4",
+    "pg": "^8.22.0",
     "react": "latest",
     "react-dom": "latest",
     "vite": "latest",

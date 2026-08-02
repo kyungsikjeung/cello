@@ -2,7 +2,7 @@
 
 > 결정일: 2026-08-02
 >
-> 상태: 채택 — 다음 백엔드 MVP의 기준선
+> 상태: **대안 기록으로 보존** — 관리형 Supabase 런타임 안은 [`SELF_HOSTED_BACKEND.md`](SELF_HOSTED_BACKEND.md)의 자체 API 결정으로 대체됨
 >
 > 범위: 로컬 개발, 비공개 베타, 첫 유료 고객 전환까지
 
