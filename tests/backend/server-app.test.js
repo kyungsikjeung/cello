@@ -5,7 +5,7 @@ const apps = []
 const config = {
   nodeEnv: 'test',
   clientOrigin: 'http://127.0.0.1:4318',
-  runtimeRole: 'app_runtime',
+  authBaseUrl: 'http://127.0.0.1:4320',
   authTrustedProxies: [],
 }
 
@@ -102,5 +102,58 @@ describe('custom backend HTTP boundary', () => {
     })
 
     expect(forwardedRequest.headers.get('x-app-client-ip')).toBe('127.0.0.1')
+  })
+
+  it('클라이언트 Host와 forwarded 헤더 대신 설정된 Auth URL을 사용한다', async () => {
+    let forwardedRequest
+    const auth = createAuth()
+    auth.handler.mockImplementation(async (request) => {
+      forwardedRequest = request
+      return new Response('{}', { status: 200 })
+    })
+    const app = await createApp({
+      config,
+      pool: { query: vi.fn() },
+      authPool: createAuthPool(),
+      auth,
+    })
+    apps.push(app)
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/test?next=projects',
+      headers: {
+        host: 'attacker.example',
+        'x-forwarded-host': 'attacker.example',
+        'x-forwarded-proto': 'https',
+      },
+      payload: {},
+    })
+
+    expect(forwardedRequest.url).toBe('http://127.0.0.1:4320/api/auth/test?next=projects')
+    expect(forwardedRequest.headers.get('host')).toBe('127.0.0.1:4320')
+    expect(forwardedRequest.headers.has('x-forwarded-host')).toBe(false)
+    expect(forwardedRequest.headers.has('x-forwarded-proto')).toBe(false)
+  })
+
+  it('예상 가능한 DB 충돌을 안정된 API 오류 코드로 변환한다', async () => {
+    const databaseError = Object.assign(new Error('duplicate'), { code: '23505' })
+    const pool = { query: vi.fn(async () => Promise.reject(databaseError)) }
+    const auth = createAuth({ user: { id: 'user-a', email: 'a@example.com', name: 'A' } })
+    const app = await createApp({ config, pool, authPool: createAuthPool(), auth })
+    apps.push(app)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/bootstrap',
+      payload: {
+        workspaceName: 'Workspace',
+        projectName: 'Project',
+        projectSlug: 'project',
+      },
+    })
+
+    expect(response.statusCode).toBe(409)
+    expect(response.json()).toEqual({ error: 'project_slug_conflict' })
   })
 })

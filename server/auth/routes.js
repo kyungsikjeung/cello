@@ -5,14 +5,19 @@ function forwardSetCookies(headers, reply) {
   if (cookies.length) reply.header('set-cookie', cookies)
 }
 
-export function registerAuthenticationRoutes(app, auth) {
+export function registerAuthenticationRoutes(app, { auth, baseUrl }) {
+  const canonicalBaseUrl = new URL(baseUrl)
+
   app.route({
     method: ['GET', 'POST'],
     url: '/api/auth/*',
     async handler(request, reply) {
-      const origin = `${request.protocol}://${request.headers.host}`
-      const url = new URL(request.url, origin)
+      const incomingUrl = new URL(request.url, 'http://internal.invalid')
+      const url = new URL(`${incomingUrl.pathname}${incomingUrl.search}`, canonicalBaseUrl)
       const headers = fromNodeHeaders(request.headers)
+      headers.set('host', canonicalBaseUrl.host)
+      headers.delete('x-forwarded-host')
+      headers.delete('x-forwarded-proto')
       headers.set('x-app-client-ip', request.ip)
       const webRequest = new Request(url, {
         method: request.method,

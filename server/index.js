@@ -1,29 +1,19 @@
-import { createApp } from './app.js'
-import { createAuth } from './auth/service.js'
-import { loadServerConfig } from './config.js'
-import { verifyDatabaseBoundaries } from './db/boundaries.js'
-import { createDatabasePool } from './db/pool.js'
-
-const config = loadServerConfig()
-const pool = createDatabasePool(config.databaseUrl)
-const { auth, authPool } = createAuth(config)
-let app
+import { createShutdown, startServer } from './runtime.js'
 
 try {
-  await verifyDatabaseBoundaries({ platformPool: pool, authPool })
-  app = await createApp({ config, pool, authPool, auth })
+  const { app } = await startServer()
+  const shutdown = createShutdown(app)
 
-  app.addHook('onClose', async () => {
-    await Promise.all([pool.end(), authPool.end()])
-  })
-  await app.listen({ host: config.host, port: config.port })
-} catch (error) {
-  if (app) {
-    app.log.error(error)
-    await app.close()
-  } else {
-    console.error(error)
-    await Promise.allSettled([pool.end(), authPool.end()])
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.once(signal, () => {
+      app.log.info({ signal }, 'shutdown requested')
+      shutdown().catch((error) => {
+        app.log.error(error, 'graceful shutdown failed')
+        process.exitCode = 1
+      })
+    })
   }
+} catch (error) {
+  console.error(error)
   process.exitCode = 1
 }

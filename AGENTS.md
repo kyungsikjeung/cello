@@ -23,6 +23,9 @@
 - 인증 암호학은 직접 구현하지 않고 저장소에 포함된 Better Auth를 사용하되 사용자·권한·CMS 규칙은 API와 PostgreSQL이 소유한다.
 - API 사용자 쿼리는 트랜잭션마다 `app_runtime` 역할과 `app.user_id`를 로컬 범위로 설정해 RLS를 적용한다.
 - migration·함수 소유자와 runtime DB 역할을 분리하고 runtime 역할에는 `BYPASSRLS`나 테이블 소유권을 주지 않는다.
+- API runtime 환경에는 `DATABASE_MIGRATION_URL`을 주입하지 않고 runtime·관리자 환경파일과 배포 비밀을 분리한다.
+- 인증 요청 URL은 설정된 `BETTER_AUTH_URL`을 기준으로 만들며 외부 `Host`·forwarded 헤더를 기준 URL로 신뢰하지 않는다.
+- API 프로세스는 시작 실패와 `SIGINT`·`SIGTERM`에서 Fastify와 모든 DB pool을 중복 없이 종료한다.
 - DB 백업이 미디어 객체를 포함한다고 가정하지 않고 PostgreSQL과 객체 스토리지를 별도로 백업·복원 검증한다.
 
 ## 문서 갱신 규칙

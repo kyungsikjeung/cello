@@ -25,6 +25,9 @@ flowchart LR
 - `server/README.md`: 실행 진입점, 폴더 책임, 시작 순서와 운영 경계
 - `server/auth/`: Better Auth 모델·전용 DB pool·세션 라우트
 - `server/routes/`: live/ready 상태와 플랫폼 HTTP API
+- `server/services/`, `server/db/platform-repository.js`: HTTP와 workspace/project 사용 사례·SQL 분리
+- `server/runtime.js`: 시작 실패 정리와 `SIGINT`·`SIGTERM` graceful shutdown
+- `server/config.js`: API runtime, migration, role provisioning 설정 계약 분리
 - `server/db/with-actor.js`: 트랜잭션 시작 후 `app_runtime` 역할과 `app.user_id`를 로컬 범위로 주입
 - `server/scripts/migrate.js`: 순서·SHA-256 체크섬을 검증하는 SQL migration 실행기
 - `db/migrations/0000_*`: `app_runtime`, `app_auth_runtime`, `app_public`, `app_functions` 역할과 스키마
@@ -45,7 +48,7 @@ flowchart LR
 6. 쓰기는 권한 검사를 포함한 제한된 함수만 허용하고, 브라우저에는 DB 자격 증명을 제공하지 않습니다.
 7. 공개 API는 `current_release_id`가 가리키는 불변 Release만 반환해야 하며 초안을 반환하면 안 됩니다.
 
-서버는 시작 시 실제 연결 계정이 각각 `app_runtime`, `app_auth_runtime`인지와 `SUPERUSER`, `BYPASSRLS`, 상위 역할 membership이 없는지를 확인하고 다르면 즉시 종료합니다. 사용자별 API 응답에는 `private, no-store`를 적용하며, Better Auth에 전달하는 IP는 허용한 프록시를 거쳐 Fastify가 계산한 값으로 덮어씁니다. Migration은 advisory lock으로 동시 실행을 직렬화합니다.
+서버는 시작 시 실제 연결 계정이 각각 `app_runtime`, `app_auth_runtime`인지와 `SUPERUSER`, `BYPASSRLS`, 상위 역할 membership이 없는지를 확인하고 다르면 즉시 종료합니다. 사용자별 API 응답에는 `private, no-store`를 적용하며, Better Auth에 전달하는 IP는 허용한 프록시를 거쳐 Fastify가 계산한 값으로 덮어씁니다. 외부 `Host`·forwarded 헤더는 Auth 기준 URL을 바꾸지 못합니다. Migration은 advisory lock으로 동시 실행을 직렬화합니다.
 
 `app_functions`는 로그인할 수 없는 `BYPASSRLS` 함수 소유 역할입니다. 따라서 모든 `SECURITY DEFINER` 함수는 고정 `search_path`, 최소 인자, 명시적 역할 검사와 회귀 테스트를 가져야 합니다.
 
@@ -54,8 +57,9 @@ flowchart LR
 아래 절차는 테스트용 PostgreSQL에서 검증한 로컬 구성 순서입니다.
 
 ```powershell
-Copy-Item server/.env.example server/.env.local
-# server/.env.local의 DB 비밀번호와 32자 이상 BETTER_AUTH_SECRET을 로컬 값으로 교체
+Copy-Item server/.env.runtime.example server/.env.runtime.local
+Copy-Item server/.env.admin.example server/.env.admin.local
+# 두 파일의 DB 비밀번호와 runtime 파일의 32자 이상 BETTER_AUTH_SECRET을 로컬 값으로 교체
 npm run db:setup
 npm run api:dev
 ```

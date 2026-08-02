@@ -1,6 +1,7 @@
 import cors from '@fastify/cors'
 import Fastify from 'fastify'
 import { registerAuthenticationRoutes } from './auth/routes.js'
+import { registerErrorHandler } from './errors.js'
 import { registerHealthRoutes } from './routes/health.js'
 import { registerPlatformRoutes } from './routes/platform.js'
 
@@ -18,13 +19,10 @@ export async function createApp({ config, pool, authPool, auth }) {
     maxAge: 86_400,
   })
 
+  registerErrorHandler(app)
   registerHealthRoutes(app, { pool, authPool })
-  registerAuthenticationRoutes(app, auth)
-  registerPlatformRoutes(app, {
-    auth,
-    pool,
-    runtimeRole: config.runtimeRole,
-  })
+  registerAuthenticationRoutes(app, { auth, baseUrl: config.authBaseUrl })
+  registerPlatformRoutes(app, { auth, pool })
 
   return app
 }

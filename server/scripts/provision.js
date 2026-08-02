@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
-import { loadServerConfig } from '../config.js'
+import { loadProvisionConfig } from '../config.js'
 
 const { Pool } = pg
 
@@ -17,30 +17,38 @@ function parseRoleCredentials(connectionString, expectedRole) {
   return { role: expectedRole, password }
 }
 
-export async function provisionDatabaseRoles(config = loadServerConfig()) {
-  if (!config.migrationDatabaseUrl) {
-    throw new Error('DATABASE_MIGRATION_URL is required for role provisioning')
-  }
-
+export async function provisionDatabaseRoles(config = loadProvisionConfig()) {
   const roles = [
     parseRoleCredentials(config.databaseUrl, 'app_runtime'),
     parseRoleCredentials(config.authDatabaseUrl, 'app_auth_runtime'),
   ]
   const pool = new Pool({ connectionString: config.migrationDatabaseUrl, max: 1 })
-  const client = await pool.connect()
+  let client
+  let transactionStarted = false
+  let releaseError
 
   try {
+    client = await pool.connect()
     await client.query('begin')
+    transactionStarted = true
     for (const { role, password } of roles) {
       const quoted = await client.query('select quote_literal($1) as value', [password])
       await client.query(`alter role ${role} login password ${quoted.rows[0].value}`)
     }
     await client.query('commit')
+    transactionStarted = false
   } catch (error) {
-    await client.query('rollback')
+    if (client && transactionStarted) {
+      try {
+        await client.query('rollback')
+      } catch (rollbackError) {
+        releaseError = rollbackError
+        throw new AggregateError([error, rollbackError], 'role provisioning rollback failed')
+      }
+    }
     throw error
   } finally {
-    client.release()
+    client?.release(releaseError)
     await pool.end()
   }
 }

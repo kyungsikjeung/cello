@@ -25,7 +25,7 @@ describe('withActorTransaction', () => {
 
     const result = await withActorTransaction(
       fixture.pool,
-      { actorId: ACTOR_ID, runtimeRole: 'app_runtime' },
+      { actorId: ACTOR_ID },
       async (client) => {
         await client.query('select visible_project')
         return 'done'
@@ -57,14 +57,14 @@ describe('withActorTransaction', () => {
     expect(fixture.client.release).toHaveBeenCalledOnce()
   })
 
-  it('SQL 식별자로 사용할 수 없는 역할명을 차단한다', async () => {
+  it('UUID가 아닌 사용자 ID를 DB 연결 전에 차단한다', async () => {
     await expect(
       withActorTransaction(
         { connect: vi.fn() },
-        { actorId: ACTOR_ID, runtimeRole: 'app_runtime; reset role' },
+        { actorId: 'not-a-uuid' },
         vi.fn(),
       ),
-    ).rejects.toThrow('runtimeRole is invalid')
+    ).rejects.toThrow('actorId must be a UUID')
   })
 
   it('롤백도 실패하면 연결을 폐기하도록 오류와 함께 반환한다', async () => {

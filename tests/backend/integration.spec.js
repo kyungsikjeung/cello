@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from '../../server/app.js'
 import { createAuth } from '../../server/auth/service.js'
-import { loadServerConfig } from '../../server/config.js'
+import { loadRuntimeConfig } from '../../server/config.js'
 import { verifyDatabaseBoundaries } from '../../server/db/boundaries.js'
 import { createDatabasePool } from '../../server/db/pool.js'
 import { withActorTransaction } from '../../server/db/with-actor.js'
@@ -28,16 +28,17 @@ function databaseUrlForRole(source, username, password) {
   return url.toString()
 }
 
-const config = loadServerConfig({
-  NODE_ENV: 'test',
-  DATABASE_URL: databaseUrlForRole(databaseUrl, 'app_runtime', 'runtime-integration'),
-  AUTH_DATABASE_URL: databaseUrlForRole(databaseUrl, 'app_auth_runtime', 'auth-integration'),
-  DATABASE_MIGRATION_URL: databaseUrl,
-  DATABASE_RUNTIME_ROLE: 'app_runtime',
-  BETTER_AUTH_SECRET: 'integration-test-secret-that-is-longer-than-32-characters',
-  BETTER_AUTH_URL: 'http://127.0.0.1:4320',
-  CLIENT_ORIGIN: 'http://127.0.0.1:4318',
-})
+const config = {
+  ...loadRuntimeConfig({
+    NODE_ENV: 'test',
+    DATABASE_URL: databaseUrlForRole(databaseUrl, 'app_runtime', 'runtime-integration'),
+    AUTH_DATABASE_URL: databaseUrlForRole(databaseUrl, 'app_auth_runtime', 'auth-integration'),
+    BETTER_AUTH_SECRET: 'integration-test-secret-that-is-longer-than-32-characters',
+    BETTER_AUTH_URL: 'http://127.0.0.1:4320',
+    CLIENT_ORIGIN: 'http://127.0.0.1:4318',
+  }),
+  migrationDatabaseUrl: databaseUrl,
+}
 
 let app
 let pool
@@ -196,7 +197,7 @@ describe('self-hosted backend integration', () => {
 
     const visibleMemberships = await withActorTransaction(
       pool,
-      { actorId: disabled.rows[0].id, runtimeRole: 'app_runtime' },
+      { actorId: disabled.rows[0].id },
       async (client) => {
         const result = await client.query(`
           select

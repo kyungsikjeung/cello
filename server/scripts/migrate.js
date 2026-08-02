@@ -3,7 +3,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
-import { loadServerConfig } from '../config.js'
+import { loadMigrationConfig } from '../config.js'
 
 const { Pool } = pg
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
@@ -13,16 +13,14 @@ export function migrationChecksum(sql) {
   return createHash('sha256').update(sql.replace(/\r\n/g, '\n')).digest('hex')
 }
 
-export async function migrateDatabase(config = loadServerConfig()) {
-  if (!config.migrationDatabaseUrl) {
-    throw new Error('DATABASE_MIGRATION_URL is required for migrations')
-  }
-
+export async function migrateDatabase(config = loadMigrationConfig()) {
   const pool = new Pool({ connectionString: config.migrationDatabaseUrl, max: 1 })
-  const client = await pool.connect()
+  let client
   let lockAcquired = false
+  let operationError
 
   try {
+    client = await pool.connect()
     await client.query('select pg_advisory_lock($1, $2)', [20_260_802, 1])
     lockAcquired = true
     await client.query(`
@@ -62,22 +60,34 @@ export async function migrateDatabase(config = loadServerConfig()) {
         await client.query('commit')
         process.stdout.write(`Applied ${name}\n`)
       } catch (error) {
-        await client.query('rollback')
+        try {
+          await client.query('rollback')
+        } catch (rollbackError) {
+          throw new AggregateError([error, rollbackError], `migration rollback failed: ${name}`)
+        }
         throw error
       }
     }
+  } catch (error) {
+    operationError = error
+    throw error
   } finally {
-    try {
-      if (lockAcquired) {
-        await client.query('select pg_advisory_unlock($1, $2)', [20_260_802, 1])
+    let cleanupError
+
+    if (client) {
+      try {
+        if (lockAcquired) {
+          await client.query('select pg_advisory_unlock($1, $2)', [20_260_802, 1])
+        }
+      } catch (error) {
+        cleanupError = error
+      } finally {
+        client.release(cleanupError)
       }
-      client.release()
-    } catch (error) {
-      client.release(error)
-      throw error
-    } finally {
-      await pool.end()
     }
+
+    await pool.end()
+    if (cleanupError && !operationError) throw cleanupError
   }
 }
 
