@@ -6,8 +6,8 @@ import pg from 'pg'
 import { loadServerConfig } from '../config.js'
 
 const { Pool } = pg
-const currentDirectory = path.dirname(fileURLToPath(import.meta.url))
-const migrationsDirectory = path.resolve(currentDirectory, '../../db/migrations')
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
+const migrationsDirectory = path.resolve(scriptDirectory, '../../db/migrations')
 
 export function migrationChecksum(sql) {
   return createHash('sha256').update(sql.replace(/\r\n/g, '\n')).digest('hex')

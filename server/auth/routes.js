@@ -5,7 +5,7 @@ function forwardSetCookies(headers, reply) {
   if (cookies.length) reply.header('set-cookie', cookies)
 }
 
-export function registerAuthRoutes(app, auth) {
+export function registerAuthenticationRoutes(app, auth) {
   app.route({
     method: ['GET', 'POST'],
     url: '/api/auth/*',

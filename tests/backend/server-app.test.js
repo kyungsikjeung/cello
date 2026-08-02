@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createApp } from '../server/app.js'
+import { createApp } from '../../server/app.js'
 
 const apps = []
 const config = {

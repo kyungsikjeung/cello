@@ -1,5 +1,5 @@
 -- Better Auth 1.6.25 core PostgreSQL schema.
--- Runtime options live in server/auth.js; changes must be regenerated and reviewed as SQL.
+-- Runtime options live in server/auth/model.js; changes must be regenerated and reviewed as SQL.
 set local search_path = app_auth, public, pg_catalog;
 
 create table app_auth.users (

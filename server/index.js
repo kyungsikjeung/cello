@@ -1,5 +1,5 @@
 import { createApp } from './app.js'
-import { createAuth } from './auth.js'
+import { createAuth } from './auth/service.js'
 import { loadServerConfig } from './config.js'
 import { verifyDatabaseBoundaries } from './db/boundaries.js'
 import { createDatabasePool } from './db/pool.js'

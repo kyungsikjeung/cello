@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { verifyDatabaseBoundaries } from '../server/db/boundaries.js'
+import { verifyDatabaseBoundaries } from '../../server/db/boundaries.js'
 
 function rolePool(roleName, overrides = {}) {
   return {

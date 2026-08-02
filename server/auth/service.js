@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth'
 import pg from 'pg'
-import { authModelConfig } from './auth-model.js'
+import { authDatabaseModel } from './model.js'
 
 const { Pool } = pg
 
@@ -19,9 +19,9 @@ export function createAuth(config) {
     secret: config.authSecret,
     trustedOrigins: [config.clientOrigin],
     database: authPool,
-    ...authModelConfig,
+    ...authDatabaseModel,
     advanced: {
-      ...authModelConfig.advanced,
+      ...authDatabaseModel.advanced,
       ipAddress: {
         ipAddressHeaders: ['x-app-client-ip'],
       },

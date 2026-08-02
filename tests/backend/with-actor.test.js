@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { withActorTransaction } from '../server/db/with-actor.js'
+import { withActorTransaction } from '../../server/db/with-actor.js'
 
 const ACTOR_ID = '11111111-1111-4111-8111-111111111111'
 

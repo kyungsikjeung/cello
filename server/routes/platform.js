@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { resolveIdentity } from '../db/identity.js'
 import { withActorTransaction } from '../db/with-actor.js'
-import { requireSession } from './auth-handler.js'
+import { requireSession } from '../auth/routes.js'
 
 const bootstrapSchema = z.object({
   workspaceName: z.string().trim().min(1).max(100),

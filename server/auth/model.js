@@ -1,4 +1,4 @@
-export const authModelConfig = {
+export const authDatabaseModel = {
   emailAndPassword: { enabled: true },
   user: {
     modelName: 'users',

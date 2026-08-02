@@ -5,7 +5,7 @@ import { loadServerConfig } from '../config.js'
 
 const { Pool } = pg
 
-function roleCredentials(connectionString, expectedRole) {
+function parseRoleCredentials(connectionString, expectedRole) {
   const url = new URL(connectionString)
   const username = decodeURIComponent(url.username)
   const password = decodeURIComponent(url.password)
@@ -23,8 +23,8 @@ export async function provisionDatabaseRoles(config = loadServerConfig()) {
   }
 
   const roles = [
-    roleCredentials(config.databaseUrl, 'app_runtime'),
-    roleCredentials(config.authDatabaseUrl, 'app_auth_runtime'),
+    parseRoleCredentials(config.databaseUrl, 'app_runtime'),
+    parseRoleCredentials(config.authDatabaseUrl, 'app_auth_runtime'),
   ]
   const pool = new Pool({ connectionString: config.migrationDatabaseUrl, max: 1 })
   const client = await pool.connect()

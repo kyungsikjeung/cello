@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createApp } from '../server/app.js'
-import { createAuth } from '../server/auth.js'
-import { loadServerConfig } from '../server/config.js'
-import { migrateDatabase } from '../server/db/migrate.js'
-import { createDatabasePool } from '../server/db/pool.js'
-import { provisionDatabaseRoles } from '../server/db/provision.js'
-import { withActorTransaction } from '../server/db/with-actor.js'
-import { verifyDatabaseBoundaries } from '../server/db/boundaries.js'
+import { createApp } from '../../server/app.js'
+import { createAuth } from '../../server/auth/service.js'
+import { loadServerConfig } from '../../server/config.js'
+import { verifyDatabaseBoundaries } from '../../server/db/boundaries.js'
+import { createDatabasePool } from '../../server/db/pool.js'
+import { withActorTransaction } from '../../server/db/with-actor.js'
+import { migrateDatabase } from '../../server/scripts/migrate.js'
+import { provisionDatabaseRoles } from '../../server/scripts/provision.js'
 
 const databaseUrl = process.env.TEST_DATABASE_URL
 

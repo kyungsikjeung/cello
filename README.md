@@ -132,10 +132,12 @@ PR #2와 PR #3은 `main`에 병합됐습니다. 기존 `CMSV2`에는 최신 CI·
 | `src/cms/CmsAppV2.jsx` | CMS 편집·검증·초안·공개·버전 UX의 현재 기준선입니다. |
 | `src/cms/auth.js` | Local 데모 인증과 권한. 운영 인증으로 사용하지 않고 자체 `/api/auth/*` 세션으로 교체합니다. |
 | `src/cms/media-db.js` | IndexedDB 미디어 저장과 제한. 클라우드 전환 시 동일한 정책을 서버에서도 검증합니다. |
-| `supabase/migrations/20260802120000_init.sql` | 프로젝트·멤버십·revision·불변 Release·공개/롤백 RPC와 RLS의 현재 DB 기준선입니다. |
-| `supabase/tests/database/platform_rls.test.sql` | owner/editor/reviewer와 교차 프로젝트 격리, 공개·롤백을 검증하는 47개 pgTAP 테스트입니다. |
-| `server/` | Fastify, Better Auth, actor 트랜잭션과 workspace/project API의 자체 백엔드 기반입니다. |
+| `supabase/migrations/20260802120000_init.sql` | 자체 백엔드 전환 전에 검증한 Supabase DB 기준선입니다. 신규 migration의 실행 경로가 아닙니다. |
+| `supabase/tests/database/platform_rls.test.sql` | 기존 47개 pgTAP 시나리오를 보존한 전환 참고 테스트입니다. |
+| `server/` | Fastify 실행 진입점과 Auth·DB·HTTP route·관리 스크립트를 책임별 폴더로 분리한 자체 백엔드입니다. |
+| `server/README.md` | 백엔드 파일 구조, 시작 순서, 실행 명령과 파일 배치 기준입니다. |
 | `db/migrations/` | 공급자 중립 PostgreSQL 인증·workspace·project·RLS의 새 migration 기준선입니다. |
+| `tests/backend/` | 백엔드 단위 테스트와 실제 PostgreSQL 통합 테스트를 분리해 관리합니다. |
 | `docs/SELF_HOSTED_BACKEND.md` | 자체 호스팅 백엔드 결정, 보안 경계, 실행·배포와 MVP 순서입니다. |
 | `docs/LOCAL_FIRST_BACKEND.md` | 이전 관리형 Supabase 대안과 비용 판단 기록입니다. |
 | `docs/CLOUD_MVP.md` | 전환 전 Local-to-Cloud 데이터·권한 요구사항 참고 문서입니다. |
@@ -149,6 +151,7 @@ PR #2와 PR #3은 `main`에 병합됐습니다. 기존 `CMSV2`에는 최신 CI·
 - [x] `ks/custom-baas-foundation`에서 Fastify·Better Auth·PostgreSQL migration 기반 생성
 - [x] 워크스페이스·초기 소유자·프로젝트를 원자적으로 생성하는 SQL/API 구현
 - [x] 깨끗한 PostgreSQL에서 migration 재실행·실제 세션·교차 사용자 RLS·최소권한 역할 검증
+- [x] 백엔드 Auth·DB·route·관리 스크립트와 단위·통합 테스트 파일 구조 분리
 - [ ] React 관리자 로그인과 `/api/v1/projects` 연결
 - [ ] CMS 저장을 `save_draft`·`publish_site`·`rollback_site` RPC에 연결하고 충돌 UX 구현
 - [ ] StorageProvider 미디어 격리·원본/파생본·프로젝트 제한 구현
@@ -203,10 +206,13 @@ PR #2와 PR #3은 `main`에 병합됐습니다. 기존 `CMSV2`에는 최신 CI·
 - `docs/SELF_HOSTED_BACKEND.md`: 현재 채택한 자체 API·PostgreSQL 백엔드와 단계별 완료 기준
 - `docs/PLATFORM_ARCHITECTURE_OPTIONS.md`: 공급자별 비용·인력 비교와 대안 분석
 - `docs/CLOUD_MVP.md`: 전환 전 서버 권한·revision·불변 Release 요구사항 기록
+- `server/README.md`: 자체 백엔드의 파일 구조·시작 순서·실행 및 테스트 명령
 - `db/migrations/`: 자체 백엔드가 실행할 공급자 중립 PostgreSQL migration
+- `tests/backend/`: 백엔드 단위 테스트와 명시적으로만 실행하는 PostgreSQL 통합 테스트
 - `supabase/migrations/`: 기존 47개 검증을 보존한 전환 전 기준선
 - `supabase/tests/database/`: migration의 권한·revision·공개·롤백 회귀 테스트
-- `.env.example`: 환경변수 이름과 브라우저 공개값·서버 비밀값 경계
+- `.env.example`: 프런트엔드에 공개 가능한 `VITE_*` 설정 템플릿
+- `server/.env.example`: API·DB·Auth·R2 서버 전용 설정 템플릿
 - `CHANGELOG/`: 변경 이유·영향·검증 결과의 시간순 기록
 
 ## 실행
@@ -238,6 +244,26 @@ npm run dev
 ```powershell
 npm run build
 ```
+
+### 자체 백엔드 실행
+
+백엔드의 상세 파일 구조와 운영 경계는 [`server/README.md`](server/README.md)를 기준으로 합니다. 로컬 PostgreSQL을 준비한 뒤 다음 순서로 실행합니다.
+
+```powershell
+Copy-Item server/.env.example server/.env.local
+# server/.env.local의 DB URL과 32자 이상의 BETTER_AUTH_SECRET을 개발 값으로 수정
+npm run db:setup
+npm run api:dev
+```
+
+다른 터미널에서 `npm run dev`를 실행하면 프런트엔드와 API를 함께 확인할 수 있습니다.
+
+| API 확인 | 주소 |
+| --- | --- |
+| 프로세스 생존 확인 | `http://127.0.0.1:4320/api/health/live` |
+| 업무·인증 DB 준비 확인 | `http://127.0.0.1:4320/api/health/ready` |
+
+`npm run test:backend`는 DB가 필요 없는 단위 테스트만 실행합니다. 실제 DB 역할을 생성·삭제하는 검증은 `_test` 전용 DB와 허용 플래그를 사용해 `npm run test:backend:integration`으로만 실행합니다.
 
 ## Local MVP 사용 흐름
 
@@ -317,7 +343,7 @@ sequenceDiagram
 - `editor@ongyeol.local`: 초안 편집·저장 가능, 공개 불가
 - `viewer@ongyeol.local`: 읽기 전용
 
-세션은 브라우저 탭의 `sessionStorage`에만 유지됩니다. 현재 구현은 권한 UX를 검증하기 위한 로컬 MVP이며 운영 인증이 아닙니다. 서버 전환 migration과 보안 계약은 `supabase/migrations/`, `docs/CLOUD_MVP.md`, `.env.example`에 정리되어 있습니다.
+세션은 브라우저 탭의 `sessionStorage`에만 유지됩니다. 현재 화면은 권한 UX를 검증하기 위한 Local MVP이며 운영 인증이 아닙니다. 신규 서버 migration과 보안 계약은 `db/migrations/`, `server/README.md`, `docs/SELF_HOSTED_BACKEND.md`, `server/.env.example`에 정리되어 있습니다. `supabase/`는 전환 전 기준선만 보존합니다.
 
 ### CMS 저장 키
 

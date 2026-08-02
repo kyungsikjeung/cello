@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loadServerConfig } from '../server/config.js'
+import { loadServerConfig } from '../../server/config.js'
 
 const validEnvironment = {
   DATABASE_URL: 'postgresql://app_runtime:runtime@127.0.0.1:5432/site_builder',

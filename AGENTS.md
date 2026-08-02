@@ -17,6 +17,7 @@
 - 비밀키는 클라이언트 번들이나 Git 저장소에 포함하지 않는다.
 - 공개 전 데이터 검증, 변경 비교, 버전 스냅샷, 롤백 경로를 유지한다.
 - DB 스키마와 RLS 변경은 `db/migrations/`의 SQL migration으로 관리하며 운영 DB에서만 수정하지 않는다.
+- 백엔드 파일은 `server/README.md`의 책임 경계를 따르며 인증은 `server/auth/`, HTTP 계약은 `server/routes/`, 관리자 실행 명령은 `server/scripts/`에 둔다.
 - 공개본은 불변 Release로 저장하고 소유자 전용 공개·롤백 경로를 사용한다.
 - 브라우저는 PostgreSQL에 직접 연결하지 않고 자체 Fastify API만 사용한다.
 - 인증 암호학은 직접 구현하지 않고 저장소에 포함된 Better Auth를 사용하되 사용자·권한·CMS 규칙은 API와 PostgreSQL이 소유한다.

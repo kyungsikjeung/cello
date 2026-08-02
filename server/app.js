@@ -1,7 +1,8 @@
 import cors from '@fastify/cors'
 import Fastify from 'fastify'
-import { registerAuthRoutes } from './http/auth-handler.js'
-import { registerPlatformRoutes } from './http/platform-routes.js'
+import { registerAuthenticationRoutes } from './auth/routes.js'
+import { registerHealthRoutes } from './routes/health.js'
+import { registerPlatformRoutes } from './routes/platform.js'
 
 export async function createApp({ config, pool, authPool, auth }) {
   const app = Fastify({
@@ -17,20 +18,8 @@ export async function createApp({ config, pool, authPool, auth }) {
     maxAge: 86_400,
   })
 
-  app.get('/api/health/live', async () => ({ status: 'ok' }))
-  app.get('/api/health/ready', async (_request, reply) => {
-    try {
-      await Promise.all([
-        pool.query('select 1'),
-        authPool.query('select 1 from app_auth.users limit 0'),
-      ])
-      return { status: 'ready' }
-    } catch {
-      return reply.status(503).send({ status: 'unavailable' })
-    }
-  })
-
-  registerAuthRoutes(app, auth)
+  registerHealthRoutes(app, { pool, authPool })
+  registerAuthenticationRoutes(app, auth)
   registerPlatformRoutes(app, {
     auth,
     pool,

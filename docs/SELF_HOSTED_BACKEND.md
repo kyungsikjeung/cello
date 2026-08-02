@@ -22,9 +22,11 @@ flowchart LR
 
 ## 구현된 기반
 
-- `server/`: Fastify 앱, Better Auth 라우트, live/ready 상태 확인
+- `server/README.md`: 실행 진입점, 폴더 책임, 시작 순서와 운영 경계
+- `server/auth/`: Better Auth 모델·전용 DB pool·세션 라우트
+- `server/routes/`: live/ready 상태와 플랫폼 HTTP API
 - `server/db/with-actor.js`: 트랜잭션 시작 후 `app_runtime` 역할과 `app.user_id`를 로컬 범위로 주입
-- `server/db/migrate.js`: 순서·SHA-256 체크섬을 검증하는 SQL migration 실행기
+- `server/scripts/migrate.js`: 순서·SHA-256 체크섬을 검증하는 SQL migration 실행기
 - `db/migrations/0000_*`: `app_runtime`, `app_auth_runtime`, `app_public`, `app_functions` 역할과 스키마
 - `db/migrations/0001_*`: Better Auth 1.6.25 PostgreSQL 테이블
 - `db/migrations/0002_*`: identity, workspace, project, RLS, 초안 revision, 불변 Release
@@ -52,10 +54,9 @@ flowchart LR
 아래 절차는 테스트용 PostgreSQL에서 검증한 로컬 구성 순서입니다.
 
 ```powershell
-Copy-Item .env.example .env.local
-# .env.local의 DB 비밀번호와 32자 이상 BETTER_AUTH_SECRET을 로컬 값으로 교체
-npm run db:migrate
-npm run db:provision
+Copy-Item server/.env.example server/.env.local
+# server/.env.local의 DB 비밀번호와 32자 이상 BETTER_AUTH_SECRET을 로컬 값으로 교체
+npm run db:setup
 npm run api:dev
 ```
 
@@ -70,7 +71,7 @@ npm run dev
 ```powershell
 $env:ALLOW_DESTRUCTIVE_DB_TESTS='1'
 $env:TEST_DATABASE_URL='postgresql://postgres:<test-password>@127.0.0.1:5432/site_builder_test'
-npm run test:backend
+npm run test:backend:integration
 ```
 
 운영에서는 `DATABASE_MIGRATION_URL`, `DATABASE_URL`, `AUTH_DATABASE_URL`을 각각 migration 관리자, 플랫폼 RLS runtime, 인증 테이블 runtime 계정으로 분리합니다. `db:provision`은 두 runtime URL에 포함된 비밀번호를 관리자 연결로 설정하며 비밀번호를 로그에 출력하지 않습니다. migration 권한이 있는 URL은 migration 작업에만 주입하고 API 프로세스에는 제공하지 않습니다.
