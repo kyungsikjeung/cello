@@ -6,7 +6,7 @@
 
 create extension if not exists pgcrypto;
 
-create type public.project_role as enum ('owner', 'editor', 'viewer');
+create type public.project_role as enum ('owner', 'editor', 'reviewer');
 
 create table public.projects (
   id uuid primary key default gen_random_uuid(),
@@ -115,15 +115,15 @@ alter table public.site_releases enable row level security;
 alter table public.media_assets enable row level security;
 
 create policy "members read projects" on public.projects for select
-  using (public.has_project_role(id, array['owner','editor','viewer']::public.project_role[]));
+  using (public.has_project_role(id, array['owner','editor','reviewer']::public.project_role[]));
 create policy "members read membership" on public.project_members for select
   using (user_id = auth.uid() or public.has_project_role(project_id, array['owner']::public.project_role[]));
 create policy "members read documents" on public.site_documents for select
-  using (public.has_project_role(project_id, array['owner','editor','viewer']::public.project_role[]));
+  using (public.has_project_role(project_id, array['owner','editor','reviewer']::public.project_role[]));
 create policy "members read releases" on public.site_releases for select
-  using (public.has_project_role(project_id, array['owner','editor','viewer']::public.project_role[]));
+  using (public.has_project_role(project_id, array['owner','editor','reviewer']::public.project_role[]));
 create policy "members read media" on public.media_assets for select
-  using (public.has_project_role(project_id, array['owner','editor','viewer']::public.project_role[]));
+  using (public.has_project_role(project_id, array['owner','editor','reviewer']::public.project_role[]));
 create policy "editors create media" on public.media_assets for insert
   with check (public.has_project_role(project_id, array['owner','editor']::public.project_role[]));
 create policy "editors update media" on public.media_assets for update
